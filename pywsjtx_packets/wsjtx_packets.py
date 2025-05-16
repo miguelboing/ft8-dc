@@ -319,6 +319,20 @@ class DecodePacket(GenericWSJTXPacket):
                                                                                                 self.mode)
         return str
 
+    def get_parameters(self):
+        return {
+            "wsjtx_id" : self.wsjtx_id,
+            "new_decode" : self.new_decode,
+            "millis_since_midnight" : self.millis_since_midnight,
+            "time" : self.time,
+            "snr" : self.snr,
+            "delta_t" : self.delta_t,
+            "delta_f" : self.delta_f,
+            "mode" : self.mode,
+            "message" : self.message,
+            "low_confidence" : self.low_confidence,
+            "off_air" : self.off_air}
+
 class ClearPacket(GenericWSJTXPacket):
     TYPE_VALUE = 3
     def __init__(self, addr_port, magic, schema, pkt_type, id, pkt):
