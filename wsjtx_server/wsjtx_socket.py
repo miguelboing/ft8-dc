@@ -26,10 +26,15 @@ def main():
     # Receive messages from the client
     while(True):
         pkt, addr_port = UDPServerSocket.recvfrom(bufferSize)  # buffer size is 1024 bytes
-        if (pkt != None):
+        if (type(pkt) != None):
             print("Got message")
             decoded_packet = pywsjtx_packets.wsjtx_packets.WSJTXPacketClassFactory.from_udp_packet(addr_port, pkt)
-            print (decoded_packet)
+
+            if (type(decoded_packet) == pywsjtx_packets.wsjtx_packets.DecodePacket):
+                print(decoded_packet)
+
+                packet_parameters = decoded_packet.get_parameters()
+                print(packet_parameters)
 
 if __name__ == "__main__":
     main()

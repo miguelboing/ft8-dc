@@ -319,7 +319,7 @@ class DecodePacket(GenericWSJTXPacket):
                                                                                                 self.mode)
         return str
 
-    def get_parameters(self):
+    def to_dict(self):
         return {
             "wsjtx_id" : self.wsjtx_id,
             "new_decode" : self.new_decode,
