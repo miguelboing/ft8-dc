@@ -1,40 +1,64 @@
-'''
-WSJT-X UDP Socket server
-'''
-
 import socket
 import sys
 import pywsjtx_packets.wsjtx_packets
 
-def main():
-    ip = ''
-    port = 5000
+class UDPServer:
+    def __init__(ip = '', port = 2237, bufferSize = 1024):
+        self.ip = ip
+        self.port = port
+        self.bufferSize = bufferSize
 
-    bufferSize = 1024
+        # Create socket
+        UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-    # Create socket
-    UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        # Enable multiple connections
+        UDPServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    # Enable multiple connections
-    UDPServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Bind the address and IP
+        UDPServerSocket.bind((ip, port))
 
-    # Bind the address and IP
-    UDPServerSocket.bind((ip, port))
+        print("UDP server up and listening")
 
-    print("UDP server up and listening")
+    def __recv_pkt(self):
+        pkt, addr_port = UDPServerSocket.recvfrom(bufferSize)
+        return pywsjtx_packets.wsjtx_packets.WSJTXPacketClassFactory.from_udp_packet(addr_port, pkt)
 
-    # Receive messages from the client
-    while(True):
-        pkt, addr_port = UDPServerSocket.recvfrom(bufferSize)  # buffer size is 1024 bytes
-        if (type(pkt) != None):
-            print("Got message")
-            decoded_packet = pywsjtx_packets.wsjtx_packets.WSJTXPacketClassFactory.from_udp_packet(addr_port, pkt)
+    def receive_pkt(self, types): # Types is a list of strings of the relevant types, the rest will be ignored
 
-            if (type(decoded_packet) == pywsjtx_packets.wsjtx_packets.DecodePacket):
-                print(decoded_packet)
+        set_types = set()
 
-                packet_parameters = decoded_packet.get_parameters()
-                print(packet_parameters)
+        for type_name in types:
+            match type_name:
+                case 'HeartBeatPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.HeartBeatPacket.TYPE_VALUE)
+                case 'StatusPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.StatusPacket.TYPE_VALUE)
+                case 'DecodePacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.DecodePacket.TYPE_VALUE)
+                case 'ClearPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.ClearPacket.TYPE_VALUE)
+                case 'ReplyPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.ReplyPacket.TYPE_VALUE)
+                case 'QSOLoggedPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.QSOLoggedPacket.TYPE_VALUE)
+                case 'ClosePacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.ClosePacket.TYPE_VALUE)
+                case 'ReplayPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.ReplayPacket.TYPE_VALUE)
+                case 'HaltTxPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.HaltTxPacket.TYPE_VALUE)
+                case 'FreeTextPacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.FreeTextPacket.TYPE_VALUE)
+                case 'WSPRDecodePacket':
+                    set_types.add(pywsjtx_packets.wsjtx_packets.WSPRDecodePacket.TYPE_VALUE)
+                case _:
+                    print(f"Unknown packet type: {type_name}")
 
-if __name__ == "__main__":
-    main()
+        # Will only leave here after a valid packet was received
+        do{
+            pkt = self.__recv_pkt()
+        }
+        while(pkt.TYPE_VALUE not in set_types)
+
+        return pkt.to_dict()
+
