@@ -62,5 +62,7 @@ class WSJTXUDPServer:
                 break;
             # TODO: Add a timout for this loop
 
+        print(pkt)
+
         return pkt.to_dict()
 
