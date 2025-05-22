@@ -207,6 +207,12 @@ class GenericWSJTXPacket(object):
         self.id = id
         self.pkt = pkt
 
+    def to_dict(self):
+        raise NotImplementedError("Method not implemented for this packet!")
+
+    def get_class_name(self):
+        return self.__class__.__name__
+
 class InvalidPacket(GenericWSJTXPacket):
     TYPE_VALUE = -1
     def __init__(self, addr_port, packet,  message):
@@ -286,6 +292,35 @@ class StatusPacket(GenericWSJTXPacket):
                                                                                                                   self.sub_mode, self.fast_mode, self.special_op_mode)
         return str
 
+    def to_dict(self):
+        return {
+            "s_wsjtx_id": self.wsjtx_id,
+            "s_dial_frequency": self.dial_frequency,
+
+            "s_mode": self.mode,
+            "s_dx_call": self.dx_call,
+
+            "s_report": self.report,
+            "s_tx_mode": self.tx_mode,
+
+            "s_tx_enabled": self.tx_enabled,
+            "s_transmitting": self.transmitting,
+            "s_decoding": self.decoding,
+            "s_rx_df": self.rx_df,
+            "s_tx_df": self.tx_df,
+
+            "s_de_call": self.de_call,
+
+            "s_de_grid": self.de_grid,
+            "s_dx_grid": self.dx_grid,
+
+            "s_tx_watchdog": self.tx_watchdog,
+            "s_sub_mode": self.sub_mode,
+            "s_fast_mode": self.fast_mode,
+
+            # new in wsjtx-2.0.0
+            "s_special_op_mode": self.special_op_mode
+        }
 
 class DecodePacket(GenericWSJTXPacket):
     TYPE_VALUE = 2
