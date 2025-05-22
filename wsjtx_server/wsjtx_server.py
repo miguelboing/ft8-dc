@@ -56,7 +56,7 @@ class WSJTXUDPServer:
                     print(f"Unknown packet type: {type_name}")
 
         # Will only leave here after a valid packet was received
-        while(True): # This loop is to emulate a do-while loop
+        while(True): # This loop's purpose is to emulate a do-while loop
             pkt = self.__recv_pkt()
             if (pkt.TYPE_VALUE in set_types):
                 break;
@@ -64,5 +64,5 @@ class WSJTXUDPServer:
 
         print(pkt)
 
-        return pkt.to_dict()
+        return pkt.get_class_name(), pkt.to_dict()
 
