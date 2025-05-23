@@ -27,15 +27,31 @@ class Dataset:
         self.df.to_csv(self.filename, index=False)
 
 class DecodeDataset(Dataset):
-    columns = ["wsjtx_id", "new_decode", "millis_since_midnight", "time",
+    decode_columns = ["wsjtx_id", "new_decode", "millis_since_midnight", "time",
                     "snr", "delta_t", "delta_f", "mode", "message", "low_confidence",
                     "off_air"]
-    def __init__(self):
 
+    status_columns = ["s_id", "s_dial_frequency", "s_mode", "s_dx_call", "s_report",
+                      "s_tx_mode", "s_tx_enabled", "s_transmitting", "s_decoding",
+                      "s_rx_df", "s_tx_df", "s_de_call", "s_de_grid", "s_dx_grid",
+                      "s_tx_watchdog", "s_sub_mode", "s_fast_mode", "s_special_op_mode",
+                      "s_frequency_tolerance", "s_tr_period", "s_config_name",
+                      "s_tx_message"]
+
+    columns = decode_columns + status_columns
+
+    def __init__(self):
+        self.status_dict = {}
         Dataset.__init__(self, './dataset/output/' + 'decodedataset.csv', self.columns)
 
+    def set_status_info(self, status_dict):
+        self.status_dict = status_dict
+
     def add_new_sample(self, sample_dict):
+
+        sample_dict.update(self.status_dict)
 
         df_temp = pd.DataFrame([sample_dict], columns=self.columns)
 
         self.add_row(df_temp)
+
