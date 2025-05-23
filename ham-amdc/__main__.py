@@ -11,8 +11,21 @@ import signal
 
 def main():
 
+    # Program starts after collecting status info
+    _, pkt = server.receive_pkt({'StatusPacket'})
+    output.set_status_info(pkt)
+
+    print("Starting to collect samples...")
+
     while(True):
-        output.add_new_sample(server.receive_pkt({'DecodePacket'}))
+        # Hook that reads only the wanted packets
+        pkt_type, pkt = server.receive_pkt({'DecodePacket', 'StatusPacket'})
+        if (pkt_type == 'StatusPacket'):
+            # Update internal values
+            output.set_status_info(pkt)
+
+        elif (pkt_type == 'DecodePacket'):
+            output.add_new_sample(pkt)
 
 
 def exit_program(sig, frame):
