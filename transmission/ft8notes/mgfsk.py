@@ -48,7 +48,8 @@ def mgfsk(if_freq, offset, symbols, pulse, sample_rate = 12000):
     # Calculate signal phases
     phases = np.zeros(total_samples)
     phase = 0
-    sample = int(sample_rate * (ft8.start_delay + offset))
+    sample_init = int(sample_rate * (ft8.start_delay + offset))
+    sample = sample_init # Preserving the init value for amp. shaping
     mod_wave = modulation_waveform(symbols, samples_per_symbol, pulse)
     dphases = mod_wave * dphase_symbol + dphase_if_freq
     for dphase in dphases:
@@ -57,14 +58,22 @@ def mgfsk(if_freq, offset, symbols, pulse, sample_rate = 12000):
         phases[sample] = phase
         sample += 1
 
-    # TBD amplitude shaping
+    # Getting complex signal
+    signal_array = np.exp(1j * phases)
 
-    # TBD complex signal
+    # Amplitude Shaping is 0.5 * [1 - cos(8pi * t / T)]
+    for x in range(total_samples):
+        if (sample_init < x < sample_init + int(samples_per_symbol/8)):
+            signal_array[x] *= 0.5 * (1 - np.cos(8 * np.pi * x / samples_per_symbol))
 
-    return np.sin(phases)
+    print(signal_array)
+
+    imag_part = np.array([y.imag for y in signal_array], dtype=np.float32)
+    real_part = np.array([y.real for y in signal_array], dtype=np.float32)
+
+    return imag_part
 
 def main():
-
     symbols = [3, 1, 4, 0, 6, 5, 2, 7, 0, 2, 7, 4, 1, 3, 2, 3, 6, 4, 1, 0, 0, 7, 6, 0, 2, 4, 1, 4, 3, 5, 3, 5, 3, 2, 4, 2, 3, 1, 4, 0, 6, 5, 2, 1, 1, 6, 3, 7, 4, 6, 4, 0, 2, 7, 7, 3, 5, 6, 4, 2, 2, 5, 4, 3, 0, 0, 0, 2, 5, 3, 0, 1, 3, 1, 4, 0, 6, 5, 2]
 
     samples_per_symbol = 512
@@ -76,18 +85,20 @@ def main():
     t = np.linspace(-1.5, 1.5, 3 * samples_per_symbol, endpoint=False)
     filtered_boxcar = gaussian_boxcar(bandwidth, t)
     plt.plot(t, filtered_boxcar)
-    plt.show()
-    print("Hello World!")
+#    plt.show()
 
     t = np.linspace(0, duration, samples)
     plt.plot(t, modulation_waveform(symbols, samples_per_symbol, filtered_boxcar)[:samples] * ft8.freq_shift)
-    plt.show()
+#    plt.show()
 
     if_freq = 14074000
     offset = 0
-    plt.plot(t, mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))[:samples]) 
+    print(mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))[:samples])
+
+    plt.plot(t, mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))[:samples])
 
     plt.show()
+
     return 0
 
 if __name__ == "__main__":
