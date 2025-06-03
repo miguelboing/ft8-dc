@@ -49,6 +49,7 @@ def mgfsk(if_freq, offset, symbols, pulse, sample_rate = 12000):
     phases = np.zeros(total_samples)
     phase = 0
     sample_init = int(sample_rate * (ft8.start_delay + offset))
+    sample_end = sample_init + samples_per_symbol * len(symbols)
     sample = sample_init # Preserving the init value for amp. shaping
     mod_wave = modulation_waveform(symbols, samples_per_symbol, pulse)
     dphases = mod_wave * dphase_symbol + dphase_if_freq
@@ -62,9 +63,11 @@ def mgfsk(if_freq, offset, symbols, pulse, sample_rate = 12000):
     signal_array = np.exp(1j * phases)
 
     # Amplitude Shaping is 0.5 * [1 - cos(8pi * t / T)]
-    for x in range(total_samples):
-        if (sample_init < x < sample_init + int(samples_per_symbol/8)):
-            signal_array[x] *= 0.5 * (1 - np.cos(8 * np.pi * x / samples_per_symbol))
+    #Generate the CosineRamp
+    amplitude_ramp = np.linspace(0, 1,num=int(samples_per_symbol/8))
+
+    signal_array[sample_init:sample_init + int(samples_per_symbol/8)] *= amplitude_ramp
+    signal_array[sample_end - len(amplitude_ramp):sample_end] *= amplitude_ramp[::-1]
 
     print(signal_array)
 
@@ -84,19 +87,19 @@ def main():
 
     t = np.linspace(-1.5, 1.5, 3 * samples_per_symbol, endpoint=False)
     filtered_boxcar = gaussian_boxcar(bandwidth, t)
-    plt.plot(t, filtered_boxcar)
+#    plt.plot(t, filtered_boxcar)
 #    plt.show()
 
-    t = np.linspace(0, duration, samples)
-    plt.plot(t, modulation_waveform(symbols, samples_per_symbol, filtered_boxcar)[:samples] * ft8.freq_shift)
-#    plt.show()
+    t = np.linspace(0, ft8.tr_period, num=samples)
+    plt.plot(t, modulation_waveform(symbols, samples_per_symbol, filtered_boxcar)[:samples] ) #* ft8.freq_shift)
+    plt.show()
 
     if_freq = 14074000
     offset = 0
-    print(mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))[:samples])
+    mgfsk_wave = mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))
 
-    plt.plot(t, mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))[:samples])
-
+    t = np.linspace(0, ft8.tr_period, num=len(mgfsk_wave))
+    plt.plot(t, mgfsk_wave)
     plt.show()
 
     return 0
