@@ -3,6 +3,7 @@ import ft8
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.special
+from scipy.io.wavfile import write
 
 def gaussian_boxcar(b, t):
     """Function to calculate gaussian filtered boxcar pulse waveform to perform M-GFSK modulation.
@@ -69,39 +70,77 @@ def mgfsk(if_freq, offset, symbols, pulse, sample_rate = 12000):
     signal_array[sample_init:sample_init + int(samples_per_symbol/8)] *= amplitude_ramp
     signal_array[sample_end - len(amplitude_ramp):sample_end] *= amplitude_ramp[::-1]
 
-    print(signal_array)
+    signal_array[0:sample_init] = 0
+    signal_array[sample_end:] = 0
 
-    imag_part = np.array([y.imag for y in signal_array], dtype=np.float32)
-    real_part = np.array([y.real for y in signal_array], dtype=np.float32)
+    return signal_array
 
-    return imag_part
+def save_to_wav(signals, filename, sample_rate = 12000):
+    """Simulate a passband containing multiple FT8 signals and noise"""
+    # signals is a list of signal tuples
+    # filename is the desired name for the WAV file - samples are in a 16-bit signed mono format
+    # noise_power is the noise power in dB - note that noise is not added when noise_power is zero.
+    # sample_rate is the desired sample rate for the WAV file
+
+    # Derived constants
+    samples_per_symbol = int(sample_rate / ft8.baud_rate)
+    total_samples = sample_rate * ft8.tr_period
+
+    # Calculate the gaussian filtered boxcar pulse
+    t = np.linspace(-1.5, 1.5, 3 * samples_per_symbol, endpoint=False)
+    filtered_boxcar = gaussian_boxcar(ft8.gaussian_bandwidth, t)
+
+    samples = np.empty((total_samples,), dtype=np.int16)
+    for message, if_freq, offset in signals:
+
+        # Encode the message
+        symbols = message.encode()
+
+        # Add signal into the mix
+        samples = (1000 * np.real(mgfsk(if_freq, offset, symbols, filtered_boxcar, sample_rate))).astype(np.int16)
+
+        t = np.linspace(0, ft8.tr_period, num=len(samples))
+        plt.plot(t, samples)
+        plt.show()
+
+
+    # Convert floating point samples to 16-bit integer
+    write(filename, sample_rate, samples.astype(np.int16))
+
+    return 0
 
 def main():
-    symbols = [3, 1, 4, 0, 6, 5, 2, 7, 0, 2, 7, 4, 1, 3, 2, 3, 6, 4, 1, 0, 0, 7, 6, 0, 2, 4, 1, 4, 3, 5, 3, 5, 3, 2, 4, 2, 3, 1, 4, 0, 6, 5, 2, 1, 1, 6, 3, 7, 4, 6, 4, 0, 2, 7, 7, 3, 5, 6, 4, 2, 2, 5, 4, 3, 0, 0, 0, 2, 5, 3, 0, 1, 3, 1, 4, 0, 6, 5, 2]
-
-    samples_per_symbol = 512
-    bandwidth = 2.0 # FT8 uses a bandwidth that is twice the baud rate
-    duration = 2.0
-    symbol_count = duration * ft8.baud_rate
-    samples = int(samples_per_symbol * symbol_count)
-
-    t = np.linspace(-1.5, 1.5, 3 * samples_per_symbol, endpoint=False)
-    filtered_boxcar = gaussian_boxcar(bandwidth, t)
+#   symbols = [3, 1, 4, 0, 6, 5, 2, 7, 0, 2, 7, 4, 1, 3, 2, 3, 6, 4, 1, 0, 0, 7, 6, 0, 2, 4, 1, 4, 3, 5, 3, 5, 3, 2, 4, 2, 3, 1, 4, 0, 6, 5, 2, 1, 1, 6, 3, 7, 4, 6, 4, 0, 2, 7, 7, 3, 5, 6, 4, 2, 2, 5, 4, 3, 0, 0, 0, 2, 5, 3, 0, 1, 3, 1, 4, 0, 6, 5, 2]
+#
+#   samples_per_symbol = 512
+#   bandwidth = 2.0 # FT8 uses a bandwidth that is twice the baud rate
+#   duration = 2.0
+#   symbol_count = duration * ft8.baud_rate
+#   samples = int(samples_per_symbol * symbol_count)
+#
+#   t = np.linspace(-1.5, 1.5, 3 * samples_per_symbol, endpoint=False)
+#   filtered_boxcar = gaussian_boxcar(bandwidth, t)
 #    plt.plot(t, filtered_boxcar)
 #    plt.show()
+#
+#   t = np.linspace(0, ft8.tr_period, num=samples)
+#   plt.plot(t, modulation_waveform(symbols, samples_per_symbol, filtered_boxcar)[:samples] ) #* ft8.freq_shift)
+#   plt.show()
 
-    t = np.linspace(0, ft8.tr_period, num=samples)
-    plt.plot(t, modulation_waveform(symbols, samples_per_symbol, filtered_boxcar)[:samples] ) #* ft8.freq_shift)
-    plt.show()
+#    if_freq = 14074000
+#    if_freq = 0
+#    offset = 0
+#    mgfsk_wave = mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))
 
-    if_freq = 14074000
-    offset = 0
-    mgfsk_wave = mgfsk(if_freq, offset, symbols, filtered_boxcar, int(ft8.baud_rate * samples_per_symbol))
+#    t = np.linspace(0, ft8.tr_period, num=len(mgfsk_wave))
+#    plt.plot(t, np.imag(mgfsk_wave))
+#    plt.show()
 
-    t = np.linspace(0, ft8.tr_period, num=len(mgfsk_wave))
-    plt.plot(t, mgfsk_wave)
-    plt.show()
-
+    signals = [
+    (ft8.StandardMessage(ft8.Callsign('M7LSI'), ft8.Callsign('G5LSI'), ft8.LocationReport('IO93')), 600, 0.3),
+#    (ft8.StandardMessage(ft8.Callsign('VK1ABC'), ft8.Callsign('VK2DEF'), ft8.SignalReport(-12)), 1200, 0.3)
+]
+    save_to_wav(signals, "ft8_audio.wav")
     return 0
 
 if __name__ == "__main__":
