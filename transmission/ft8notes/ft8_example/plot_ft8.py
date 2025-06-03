@@ -1,9 +1,10 @@
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 
 # Replace this with the path to your downloaded FT8 .wav file
-wav_path = '210703_133430.wav'
+wav_path = sys.argv[1]
 
 # Load the audio file
 sample_rate, audio_data = wavfile.read(wav_path)
