@@ -21,25 +21,32 @@ class RadioControl:
             return -1
         return 0
 
-    def set_mode(self, mode='LSB', passband=-1):
-        # passband is in Hz. passband = -1 for no change, passband = 0 for radio backend default
-        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'M', mode + ' ' + str(passband)])
+    def set_mode(self, mode='USB', passband=-1):
+        # passband is in Hz. passband = -1 for no change, passband = 0 for radio backend default (2700 for FlexRadio 6400)
+        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'M', mode, str(passband)])
 
         cur_mode = self.get_mode()
 
-        if (cur_mode != mode):
-            print("Failed to mode. Currently set to: {cur_mode}")
+        if (cur_mode != mode + '\n' + str(passband)):
+            print(f"Failed to set mode. Currently set to: {cur_mode}, but and tried to set to {mode}")
             return -1
         return 0
 
 def main():
     radio = RadioControl()
     print("Hello World!")
-    print(radio.get_if_frequency())
 
-    radio.set_if_frequency(14075000)
+#    print(radio.get_if_frequency())
+#
+#    radio.set_if_frequency(14074000)
+#
+#    print(radio.get_if_frequency())
 
-    print(radio.get_if_frequency())
+    print(radio.get_mode())
+
+    print(radio.set_mode('USB', 2700))
+
+    print(radio.get_mode())
 
     return 0
 
