@@ -1,10 +1,19 @@
 import subprocess
 
+import sounddevice as sd
+import soundfile as sf
+
+import sched
+import time
+from datetime import datetime, timedelta, UTC
+
 class RadioControl:
     def __init__(self, m='2', port='localhost:4532', max_power_W=100):
         self.m = m
         self.port= port
         self.max_power_W = max_power_W
+
+        self.s = sched.scheduler(time.time, time.sleep)
 
     def get_if_frequency(self):
         return subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'f'], capture_output=True, text=True).stdout.strip()
@@ -52,33 +61,58 @@ class RadioControl:
 
         return 0
 
+    def wait_until_next_15s(self):
+        now = datetime.now(UTC)
+        # Calculate the next multiple of 15 seconds
+        seconds = ((now.second // 15) + 1) * 15
+        if seconds == 60:
+            target = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
+        else:
+            target = now.replace(second=seconds, microsecond=0)
+
+        delay = (target - now).total_seconds()
+        print(f"Current time : {now}")
+        print(f"Waiting until: {target} (sleeping {delay:.3f} seconds)")
+        time.sleep(delay)
 
 
+    def transmit_audio_file(self, filename):
+        data, sample_rate = sf.read(filename)
+        print(data)
+        print(sample_rate)
+#        print(sd.query_devices())
+#
+#        # Automatically find the index for the 'nDAX' output device
+        output_device_name = 'nDAX'
+        device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
+
+#       now = datetime.utcnow()
+        self.wait_until_next_15s()
+#        print("Finishrf")
+#       # Enabling PPT fot the radio
+        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '3'])
+#
+#        # Play audio
+        sd.play(data, samplerate=samplerate, device=device_info['index'])
+        sd.wait()
+#
+#       # Disabling PPT for the radio
+        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
+        return 0
 
 def main():
     radio = RadioControl()
     print("Hello World!")
 
-#    print(radio.get_if_frequency())
-#
-#    radio.set_if_frequency(14074000)
-#
-#    print(radio.get_if_frequency())
-
-    print(radio.get_tx_power())
-
     print(radio.set_tx_power(10))
 
-    print(radio.get_tx_power())
-
-#    print(radio.set_mode('USB', 2700))
-#
-#    print(radio.get_mode())
+    radio.transmit_audio_file("../audio_files/ft8_audio.wav")
 
     return 0
 
 if __name__ == '__main__':
     main()
+
 
 # Get frequency
 #result = subprocess.run(['rigctl', '-m', '2', '-r', 'localhost:4532', 'f'], capture_output=True, text=True)
