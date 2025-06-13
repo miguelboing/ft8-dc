@@ -1,3 +1,4 @@
+import numpy as np
 import subprocess
 
 import sounddevice as sd
@@ -77,34 +78,43 @@ class RadioControl:
 
 
     def transmit_audio_file(self, filename):
-        data, sample_rate = sf.read(filename)
+        data, sample_rate = sf.read(filename, dtype=np.int16)
         print(data)
         print(sample_rate)
-#        print(sd.query_devices())
+        print(sd.query_devices())
 #
 #        # Automatically find the index for the 'nDAX' output device
+#        output_device_name = 'Flex slice A TX'
+
         output_device_name = 'nDAX'
+
         device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
 
-#       now = datetime.utcnow()
+#        print(sd.check_output_settings(device_info['index']))
         self.wait_until_next_15s()
-#        print("Finishrf")
-#       # Enabling PPT fot the radio
-        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '3'])
-#
-#        # Play audio
-        sd.play(data, samplerate=samplerate, device=device_info['index'])
-        sd.wait()
-#
-#       # Disabling PPT for the radio
-        subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
-        return 0
+        # Enabling PPT fot the radio
+        try:
+            subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '3'])
+
+            # Play audio
+            sd.play(data, samplerate=sample_rate, device=device_info['index'])
+            sd.wait()
+
+           # Disabling PPT for the radio
+            subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
+            return 0
+        except:
+            subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
+            print("Failed to transmit, returned to RX mode")
+
+        return -1
 
 def main():
     radio = RadioControl()
     print("Hello World!")
 
     print(radio.set_tx_power(10))
+    print(radio.set_if_frequency())
 
     radio.transmit_audio_file("../audio_files/ft8_audio.wav")
 
