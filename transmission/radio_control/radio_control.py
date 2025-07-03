@@ -76,35 +76,33 @@ class RadioControl:
         print(f"Waiting until: {target} (sleeping {delay:.3f} seconds)")
         time.sleep(delay)
 
-
     def transmit_audio_file(self, filename):
-        data, sample_rate = sf.read(filename, dtype=np.int16)
-        print(data)
-        print(sample_rate)
-        print(sd.query_devices())
-#
-#        # Automatically find the index for the 'nDAX' output device
-#        output_device_name = 'Flex slice A TX'
+        file_data, file_sample_rate = sf.read(filename, dtype=np.float32)
 
-        output_device_name = 'nDAX'
+        # Automatically find the index for the 'Flex slice A TX' output device
+        output_device_name = 'Flex slice A TX'
 
         device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
 
-#        print(sd.check_output_settings(device_info['index']))
+        print(f"Selected device: {device_info['name']}")
+
         self.wait_until_next_15s()
+
         # Enabling PPT fot the radio
         try:
-            subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '3'])
+            subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '1'])
 
             # Play audio
-            sd.play(data, samplerate=sample_rate, device=device_info['index'])
+            sd.play(file_data, samplerate=file_sample_rate, device=device_info['index'], blocksize=int(0.025 * file_sample_rate), latency="low")
             sd.wait()
 
-           # Disabling PPT for the radio
+            # Disabling PPT for the radio
             subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
             return 0
-        except:
+
+        except Exception as e:
             subprocess.run(['rigctl', '-m', self.m, '-r', self.port, 'T', '0'])
+            print(f"An error occurred: {e}")
             print("Failed to transmit, returned to RX mode")
 
         return -1
@@ -113,17 +111,13 @@ def main():
     radio = RadioControl()
     print("Hello World!")
 
-    print(radio.set_tx_power(10))
+    print(radio.set_tx_power(20))
     print(radio.set_if_frequency())
 
-    radio.transmit_audio_file("../audio_files/ft8_audio.wav")
+    print(radio.transmit_audio_file("../audio_files/ft8_audio_float32_mono_48000.wav"))
 
     return 0
 
 if __name__ == '__main__':
     main()
 
-
-# Get frequency
-#result = subprocess.run(['rigctl', '-m', '2', '-r', 'localhost:4532', 'f'], capture_output=True, text=True)
-#print("Frequency:", result.stdout.strip())
