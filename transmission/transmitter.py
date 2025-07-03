@@ -1,6 +1,5 @@
 import numpy as np
 import ft8notes.ft8 as ft8
-import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.special
 from scipy.io.wavfile import write
@@ -84,7 +83,7 @@ class FT8_Transmitter:
 
         return signal_array
 
-    def save_to_wav(self, signals, filename):
+    def save_to_wav(self, signals, filename, norm_factor=1000, dtype=np.int16):
         """Simulate a passband containing multiple FT8 signals and noise"""
         # signals is a list of signal tuples
         # filename is the desired name for the WAV file - samples are in a 16-bit signed mono format
@@ -94,21 +93,18 @@ class FT8_Transmitter:
         # Derived constants
         total_samples = self.sample_rate * ft8.tr_period
 
-        samples = np.empty((total_samples,), dtype=np.int16)
+        samples = np.empty((total_samples,), dtype=dtype)
         for message, if_freq, offset in signals:
 
             # Encode the message
             symbols = message.encode()
 
             # Add signal into the mix
-            samples = (1000 * np.real(self._mgfsk(if_freq, offset, symbols))).astype(np.int16)
+            samples = (norm_factor * np.real(self._mgfsk(if_freq, offset, symbols))).astype(dtype)
 
             t = np.linspace(0, ft8.tr_period, num=len(samples))
-            plt.plot(t, samples)
-            plt.show()
 
-
-        # Convert floating point samples to 16-bit integer
-        write(filename, self.sample_rate, samples.astype(np.int16))
+        # Saving in to wav format
+        write(filename, self.sample_rate, samples.astype(dtype))
 
         return 0
