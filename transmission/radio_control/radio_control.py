@@ -14,7 +14,7 @@ import platform
 if os.name == 'nt':
     # Running on windows with rigctl under wsjtx
     rigctl = 'rigctl-wsjtx'
-    output_device_name = 'DAX Audio TX 1'
+    output_device_name = 'DAX Audio TX (FlexRadio Systems DAX TX)'
 elif os.name == 'posix':
     # Running directly rigctl
     rigctl = 'rigctl'
@@ -105,7 +105,7 @@ class RadioControl:
             subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'T', '3'])
 
             # Play audio
-            sd.play(file_data, samplerate=file_sample_rate, device=device_info['index'], blocksize=int(0.025 * file_sample_rate), latency="low")
+            sd.play(file_data, samplerate=file_sample_rate, device=65, blocksize=int(0.025 * file_sample_rate), latency="low")# channels=1)
             sd.wait()
 
             # Disabling PPT for the radio
@@ -126,7 +126,7 @@ def main():
     print(radio.set_tx_power(20))
     print(radio.set_if_frequency())
 
-    print(radio.transmit_audio_file("../audio_files/ft8_audio_int16_12000.wav"))
+    print(radio.transmit_audio_file("../audio_files/ft8_audio_float32_mono_48000.wav"))
 
     return 0
 
