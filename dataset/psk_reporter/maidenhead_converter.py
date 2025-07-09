@@ -13,7 +13,7 @@ def maidenhead_to_gcs(locator):
             # Length = (90 - (-90)) = 180
             lat = -90 + ((ord(locator[1]) - 65) * 10)
         elif ((97 <= ord(locator[0]) <= 114) and (97 <= ord(locator[1]) <= 114)): # Checking if they are wrongfully in lowercase
-            print("The locator seems to be badly formated, the fields are in lowercase, interpreting as uppercase")
+#            print("The locator seems to be badly formated, the fields are in lowercase, interpreting as uppercase")
             long = -180 + ((ord(locator[0]) - 97) * 20)
             lat = -90 + ((ord(locator[1]) - 97) * 10)
 
@@ -36,7 +36,7 @@ def maidenhead_to_gcs(locator):
                     ss_lat = float(1/24 * (ord(locator[5]) - 97))
 
                 elif ((65 <= ord(locator[4]) <= 88) and (65 <= ord(locator[5]) <= 88)):
-                    print("The locator seems to be badly formated, the subsquare are in uppercase, interpreting as lowercase")
+#                    print("The locator seems to be badly formated, the subsquare are in uppercase, interpreting as lowercase")
                     ss_long = float(2/24 * (ord(locator[4]) - 65))
                     ss_lat = float(1/24 * (ord(locator[5]) - 65))
 
@@ -67,10 +67,3 @@ def maidenhead_to_gcs(locator):
 
     return 0, (lat + s_lat + ss_lat + ex_lat), (long + s_long + ss_long + ex_long)
 
-#def main():
-#    locators = ["IO93FT", "IO", "ZZ2343", "io93ft", "io93FT", "RR99XX99", "aa00aa00", "b", "GG52RJ85", "IOT442"]
-#    for locator in locators:
-#        print(f" locator, val, lat, long {locator}: {maidenhead_to_gcs(locator)}")
-#
-#if __name__ == '__main__':
-#    main()
