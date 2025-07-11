@@ -1,8 +1,7 @@
 import requests
 import pandas as pd
 from io import StringIO
-
-url = "https://retrieve.pskreporter.info/query"
+import listernerstationsclusters as lsc
 
 class PSK_Reporter:
     url = "https://retrieve.pskreporter.info/query"
@@ -29,6 +28,8 @@ class PSK_Reporter:
 
         # This are the stations that are currently active.
         df_active_receiver = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
+        clusters = lsc.ListenerStationClusters(df_active_receiver)
+        clusters.save_to_pklgz(name)
 
         # Contains the senderCallsign and the most recent unix epoch of when a transmission from senderCallsign was reported.
         df_sender_search = pd.read_xml(StringIO(xml_string), xpath=".//senderSearch")
@@ -39,9 +40,4 @@ class PSK_Reporter:
         # Unix epoch of the last report contained in this response.
         df_max_flow_start_seconds = pd.read_xml(StringIO(xml_string), xpath=".//maxFlowStartSeconds")
 
-        df_reception_report.to_csv("./../output/" + name + "_reception_report.csv")
-        df_active_cs.to_csv("./../output/" + name + "_active_cs.csv")
-        df_active_receiver.to_csv("./../output/" + name + "_active_receiver.csv")
-        df_last_sequence_number.to_csv("./../output/" + name + "_last_sequence_number.csv")
-        df_max_flow_start_seconds.to_csv("./../output/" + name + "_max_flow_start_seconds.csv")
 
