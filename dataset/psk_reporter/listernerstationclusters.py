@@ -37,6 +37,10 @@ class ListenerStationClusters:
             cluster['convex_hull'] = MultiPoint(cluster_points).convex_hull
             self.clusters_params.append(cluster)
 
+    @property
+    def cluster_params(self):
+        return self.clusters_params
+
     def save_to_pklgz(self, name=""):
         with gzip.open(name + '_clusters.pkl.gz', 'wb') as f:
             pickle.dump(self.clusters_params, f)
