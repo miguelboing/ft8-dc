@@ -1,5 +1,6 @@
 # Dataset output files
 *.csv
+*.wav
 *.pkl*
 
 # Byte-compiled / optimized / DLL files
