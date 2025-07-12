@@ -1,4 +1,15 @@
 [general_config]
+
+# This is CAT Command server to control the radio, use rigctld
+cat_tcp_server = "127.0.0.1"
+cat_tcp_port = 4532 # Be aware that this is not directly your radio's port but the rigctld port.
+
+# This is the port externalized by WSJT-X that the program will use to read the incoming decoded packets.
+# Check this info at File -> Settings... -> Reporting -> UDP Server
+wsjtx_udp_server = "127.0.0.1"
+wsjtx_udp_port = 2237
+
+# Standard Callsign and Locator in case these parameters aren't passed using the iterations_sets list.
 general_callsign = "G5LSI"
 general_locator = "IO93"
 
