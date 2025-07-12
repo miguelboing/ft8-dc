@@ -1,0 +1,26 @@
+[general_config]
+general_callsign = "G5LSI"
+general_locator = "IO93"
+
+# The iterations are a list of dictionaries. Each dictionary is an iteration of the software with the following parameters:
+[[iterations_sets]] # This is where you automate your dataset acquisition iterations
+iteration_set_id = "my_first_set_iteration"
+n_iterations = 1 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
+band = "5m" # 20m, 5m (20 meters, 5 meters, etc ...).
+frequency = 600 # This is the frequency (inside the band) in which the message will be transmitted.
+tx_power = 20 # Power in Watts.
+listening_time = 5 # This is how much time the application will listen to the selected band.
+local_callsign = "M7NSE" # Optional, if this parameter is not set the general_callsign will be used.
+local_locator = ""  # Optional, if this parameter is not set the general_locator will be used.
+
+# This is how you create anothet iteration set
+[[iterations_sets]] # This is where you automate your dataset acquisition iterations
+iteration_set_id = "my_first_set_iteration"
+n_iterations = 2 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
+band = "10m" # 20m, 5m (20 meters, 5 meters, etc ...).
+frequency = 1500 # This is the frequency (inside the band) in which the message will be transmitted.
+tx_power = 50 # Power in Watts.
+listening_time = 5 # This is how much time (in minutes) the application will listen to the selected band.
+local_callsign = "" # Optional, if this parameter is not set the general_callsign will be used.
+local_locator = "IO94"  # Optional, if this parameter is not set the general_locator will be used.
+
