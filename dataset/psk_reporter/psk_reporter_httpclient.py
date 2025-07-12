@@ -3,7 +3,7 @@ import pandas as pd
 from io import StringIO
 import listernerstationclusters as lsc
 
-class HTTP_Client(lsc.ListernerStationClusters):
+class PSKReporter(lsc.ListernerStationClusters):
     url = "https://retrieve.pskreporter.info/query"
 
     def __init__(self, callsign):
