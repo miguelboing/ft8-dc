@@ -20,12 +20,16 @@ class Dataset(PSKReporter):
 
     #Use this method to import the csv to a dataframe
     @classmethod
-    def from_csv(cls, columns):
-        data = pd.read_csv(self.filename)
+    def from_csv(cls, name, columns):
+        data = pd.read_csv(name)
         return cls(data.to_dict(orient='records'), columns)
 
-    def save_csv(self):
-        self.df.to_csv(self.filename, index=False)
+    def save_csv(self, name = ""):
+        self.df.to_csv(name, index=False)
+
+    @property(self):
+    def df(self):
+        return self.df
 
 class DecodeDataset(Dataset):
     decode_columns = ["wsjtx_id", "new_decode", "millis_since_midnight", "time",
@@ -54,5 +58,4 @@ class DecodeDataset(Dataset):
         df_temp = pd.DataFrame([sample_dict], columns=self.columns)
 
         self.add_row(df_temp)
-
 
