@@ -17,7 +17,7 @@ class HamAMDC():
         print(self.config)
 
         # Initialize the radio
-        self.radio = RadioControl(port=self.config['general_config']['cat_tcp_server'] + ':' + str(self.config['general_config']['cat_tcp_port']))
+        if (self.radio = RadioControl(port=self.config['general_config']['cat_tcp_server'] + ':' + str(self.config['general_config']['cat_tcp_port']))
 
         # Initialize the UDP Server
         self.wsjtx = WSJTXUDPServer(ip=self.config['general_config']['wsjtx_udp_server'], port=self.config['general_config']['wsjtx_udp_port'])
@@ -63,7 +63,7 @@ class HamAMDC():
                     decode_dataset.add_new_sample(pkt)
 
             # Transmission
-            radio.transmit_samples(self, filename="", samples=samples, sample_rate=self.config['sample_rate'])
+            radio.transmit_samples(self, filename="", samples=samples, audio_device=self.config['tx_audio_channel'], sample_rate=self.config['sample_rate'])
 
             # Wait for PSK Reporter to update
             start_time = time.time()

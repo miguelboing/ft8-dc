@@ -3,6 +3,7 @@
 # This is CAT Command server to control the radio, use rigctld
 cat_tcp_server = "127.0.0.1"
 cat_tcp_port = 4532 # Be aware that this is not directly your radio's port but the rigctld port.
+tx_audio_channel = 65 # Use the script ./transmisson/radio_control/find_audiodevice.py to discover the channel's equivalent number
 sample_rate = 48000 # Sample Rate expected by your radio's audio channel.
 
 # This is the port externalized by WSJT-X that the program will use to read the incoming decoded packets.
