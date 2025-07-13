@@ -1,9 +1,10 @@
 import pandas as pd
+from psk_reporter import PSKReporter
 
-class Dataset:
-    def __init__(self, filename, columns):
+class Dataset(PSKReporter):
+    def __init__(self, callsign, columns):
         self.df = pd.DataFrame(columns=columns, dtype="object")
-        self.filename = filename
+        PSKReporter().__init__(callsign)
 
     # Export data into a dictionary
     def to_dict(self):
@@ -40,18 +41,18 @@ class DecodeDataset(Dataset):
 
     columns = decode_columns + status_columns
 
-    def __init__(self):
+    def __init__(self, callsign):
         self.status_dict = {}
-        Dataset.__init__(self, './dataset/output/' + 'decodedataset.csv', self.columns)
+        Dataset.__init__(self, callsign, self.columns)
 
     def set_status_info(self, status_dict):
         self.status_dict = status_dict
 
     def add_new_sample(self, sample_dict):
-
         sample_dict.update(self.status_dict)
 
         df_temp = pd.DataFrame([sample_dict], columns=self.columns)
 
         self.add_row(df_temp)
+
 
