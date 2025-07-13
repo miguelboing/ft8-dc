@@ -14,7 +14,7 @@ wsjtx_udp_server = "127.0.0.1"
 wsjtx_udp_port = 2237
 
 # The iterations are a list of dictionaries. Each dictionary is an iteration of the software with the following parameters:
-[[iterations_sets]] # This is where you automate your dataset acquisition iterations
+[[iteration_sets]] # This is where you automate your dataset acquisition iterations
 iteration_set_id = "my_first_set_iteration"
 n_iterations = 1 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
@@ -26,7 +26,7 @@ callsign = "M7NSE"
 locator = "IO93"
 
 # This is how you create anothet iteration set
-[[iterations_sets]] # This is where you automate your dataset acquisition iterations
+[[iteration_sets]] # This is where you automate your dataset acquisition iterations
 iteration_set_id = "my_first_set_iteration"
 n_iterations = 2 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).

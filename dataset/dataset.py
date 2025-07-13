@@ -28,7 +28,7 @@ class Dataset(PSKReporter):
     def save_csv(self, name = ""):
         self.df.to_csv(name, index=False)
 
-    @property(self):
+    @property
     def df(self):
         return self.df
 
