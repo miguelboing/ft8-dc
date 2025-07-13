@@ -25,8 +25,15 @@ class HamAMDC():
         # Initialize the FT8 Modulator
         self.modulator = FT8Modulator(sample_rate=self.config['sample_rate'])
 
-        for iteration_set in self.config['iteration_sets']:
-            self.__interpret_iteration_set(iteration_set)
+        if (self.config['end_behaviour'] == "stop"):
+            for iteration_set in self.config['iteration_sets']:
+                self.__interpret_iteration_set(iteration_set)
+            return 0
+        elif (self.config['end_behaviour'] == "loop"):
+            while(True):
+                for iteration_set in self.config['iteration_sets']:
+                    self.__interpret_iteration_set(iteration_set)
+        return -1
 
     def __interpret_iteration_set(self, itset):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
