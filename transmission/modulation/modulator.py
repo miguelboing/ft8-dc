@@ -1,8 +1,9 @@
 import numpy as np
-import ft8notes.ft8 as ft8
 import scipy.signal
 import scipy.special
 from scipy.io.wavfile import write
+
+import transmission.modulation.ft8notes.ft8 as ft8
 
 class FT8Modulator:
     def __init__(self, b=ft8.gaussian_bandwidth, sample_rate=12000):

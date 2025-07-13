@@ -1,5 +1,6 @@
 import pandas as pd
-from psk_reporter import PSKReporter
+
+from dataset.psk_reporter.psk_reporter_httpclient import PSKReporter
 
 class Dataset(PSKReporter):
     def __init__(self, callsign, columns):

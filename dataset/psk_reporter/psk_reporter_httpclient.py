@@ -1,9 +1,9 @@
 import requests
 import pandas as pd
 from io import StringIO
-import listernerstationclusters as lsc
+import dataset.psk_reporter.listenerstationclusters as lsc
 
-class PSKReporter(lsc.ListernerStationClusters):
+class PSKReporter(lsc.ListenerStationClusters):
     url = "https://retrieve.pskreporter.info/query"
 
     def __init__(self, callsign):
