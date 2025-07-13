@@ -89,8 +89,12 @@ class RadioControl:
         print(f"Waiting until: {target} (sleeping {delay:.3f} seconds)")
         time.sleep(delay)
 
-    def transmit_audio_file(self, filename):
-        file_data, file_sample_rate = sf.read(filename, dtype=np.float32)
+    def transmit_samples(self, filename="", samples=None, sample_rate=None, dtype=np.float32):
+        if (filename == ""):
+            file_data = samples
+            file_sample_rate = sample_rate
+        else:
+            file_data, file_sample_rate = sf.read(filename, dtype=dtype)
 
         # Automatically find the index for the output_device_name
         device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
