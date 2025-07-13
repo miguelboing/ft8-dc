@@ -9,7 +9,7 @@ class PSKReporter(lsc.ListernerStationClusters):
     def __init__(self, callsign):
         self.senderCallsign = callsign,
 
-    def get_report(self, time=30, name=""):
+    def get_report(self, time=30):
         params = {
             "senderCallsign" : self.senderCallsign,
             "time": time
@@ -49,5 +49,4 @@ class PSKReporter(lsc.ListernerStationClusters):
         print(report)
 
         return report
-
 
