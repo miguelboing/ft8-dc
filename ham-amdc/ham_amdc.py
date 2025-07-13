@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import toml
+import gzip
 
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
@@ -84,16 +85,12 @@ class HamAMDC():
                 str(self.config['freq_band']) + "Hz_" +
                 str(self.config['frequency']) + "Hz_" +
                 str(self.config['tx_power']) + "W_" +
-                str(self.config['listening_time'] + "min_"
+                str(self.config['listening_time'] + "min" +
+                    + ".pkl.gz"
 
             # Store everything and compress it
             with gzip.open(output_name, 'wb') as f:
                 pickle.dump(output, f)
 
             return 0
-
-
-
-
-
 
