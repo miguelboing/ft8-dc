@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import toml
 
@@ -44,13 +45,53 @@ class HamAMDC():
             _, pkt = self.wsjtx.receive_pkt({'StatusPacket'})
             decode_dataset.set_status_info(pkt) # Updating status information
 
-            # TODO Listening time
+            iteration_datetime_utc = time.gmtime() # This will be used to catalogue the different iterations
 
-            # TODO Transmission
+            # Listening the channel for the specified time
+            start_time = time.time()
+            duration = itset['listening_time'] * 60  # duration in seconds
 
-            # TODO GET PSK Reporter data
+            while ((time.time() - start_time) < duration):
+                print("Running loop...")
+                pkt_type, pkt = wsjtx.receive_pkt({'DecodePacket', 'StatusPacket'})
+                if (pkt_type == 'StatusPacket'):
+                    # Update internal values
+                    decode_dataset.set_status_info(pkt)
 
-            # TODO Store everything and compress it
+                elif (pkt_type == 'DecodePacket'):
+                    decode_dataset.add_new_sample(pkt)
+
+            # Transmission
+            radio.transmit_samples(self, filename="", samples=samples, sample_rate=self.config['sample_rate'])
+
+            # Wait for PSK Reporter to update
+            start_time = time.time()
+            duration = 30 * 60  # duration in seconds
+            print("Waiting 30 minutes to PSK Reporter to update...")
+            while ((time.time() - start_time) < duration):
+                pass
+
+            # Assembling data to storage
+            output = {}
+            output['receive_reports'] = decode_dataset.df
+            output['transmission_reports'] = decode_dataset.get_report(time=30)
+            output_name = "./dataset/output/" + itset['callsign'] + "_" +
+                str(iteration_datetime_utc.tm_year) +  "_" +
+                str(iteration_datetime_utc.tm_mon) + "_" +
+                str(iteration_datetime_utc.tm_mday) + "_" +
+                str(iteration_datetime_utc.tm_hour) + "_" +
+                str(iteration_datetime_utc.tm_min) + "_" +
+                str(self.config['freq_band']) + "Hz_" +
+                str(self.config['frequency']) + "Hz_" +
+                str(self.config['tx_power']) + "W_" +
+                str(self.config['listening_time'] + "min_"
+
+            # Store everything and compress it
+            with gzip.open(output_name, 'wb') as f:
+                pickle.dump(output, f)
+
+            return 0
+
 
 
 
