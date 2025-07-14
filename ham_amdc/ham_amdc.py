@@ -37,7 +37,7 @@ class HamAMDC():
 
     def __interpret_iteration_set(self, itset):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
-            print(f"Running iteration {i} of iteration_set {itset['iteration_set_id']}...")
+            print(f"Running iteration {i+1} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
@@ -107,5 +107,10 @@ class HamAMDC():
             with gzip.open(output_name, 'wb') as f:
                 pickle.dump(output, f)
 
+            # Waiting time between iterations
+            start_time = time.time()
+            duration = itset['waiting_time'] * 60  # duration in seconds
+            while ((time.time() - start_time) < duration):
+                pass
             return 0
 

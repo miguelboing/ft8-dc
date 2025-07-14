@@ -6,7 +6,7 @@ cat_tcp_port = 4532 # Be aware that this is not directly your radio's port but t
 tx_audio_channel = 65 # Use the script ./transmisson/radio_control/find_audiodevice.py to discover the channel's equivalent number
 sample_rate = 48000 # Sample Rate expected by your radio's audio channel.
 psk_reporter_delay = 30 # Time in minutes to wait for pskreporter update its database
-end_behaviour = "loop" # This defines what happens after the program runs all the iterations, set it to "loop" if you want the program to restart the data collection or "stop" if you want the program to return
+end_behaviour = "stop" # This defines what happens after the program runs all the iterations, set it to "loop" if you want the program to restart the data collection or "stop" if you want the program to return
 
 # This is the port externalized by WSJT-X that the program will use to read the incoming decoded packets.
 # Check this info at File -> Settings... -> Reporting -> UDP Server
@@ -24,15 +24,18 @@ passband = -1 # Radio's passband in Hz (Flex radio's default is 2700 Hz leave as
 listening_time = 5 # This is how much time the application will listen to the selected band.
 callsign = "M7NSE"
 locator = "IO93"
+waiting_time = 30 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
 
 # This is how you create anothet iteration set
 [[iteration_sets]] # This is where you automate your dataset acquisition iterations
-iteration_set_id = "my_first_set_iteration"
+iteration_set_id = "my_second_set_iteration"
 n_iterations = 2 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
 frequency = 1500 # This is the frequency (inside the band) in which the message will be transmitted.
 tx_power = 10 # Power in Watts.
+passband = -1 # Radio's passband in Hz (Flex radio's default is 2700 Hz leave as -1 to not change it or 0 for radio backend default)
 listening_time = 5 # This is how much time (in minutes) the application will listen to the selected band.
 callsign = "M7LSI"
 locator = "IO93"
+waiting_time = 45 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
 
