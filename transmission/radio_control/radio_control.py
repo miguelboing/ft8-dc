@@ -29,7 +29,7 @@ class RadioControl:
         return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'f'], capture_output=True, text=True).stdout.strip().splitlines()[-1]
 
     def get_mode(self):
-        return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'm'], capture_output=True, text=True).stdout.strip().splitlines()[-1]
+        return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'm'], capture_output=True, text=True).stdout.strip().splitlines()[-2:]
 
     def get_tx_power(self):
         return round(self.max_power_W * float((subprocess.run(['rigctl-wsjtx', '-m', self.m, '-r', self.port, 'l', 'RFPOWER'], capture_output=True, text=True).stdout.strip()).splitlines()[-1]))
@@ -41,8 +41,9 @@ class RadioControl:
         cur_freq = self.get_if_frequency()
 
         if (cur_freq != str(frequency)):
-            print("Failed to set the frequency. Currently set to: {result}")
+            print(f"Failed to set the frequency. Currently set to: {cur_freq}, tried to set to {str(frequency)}")
             return -1
+
         return 0
 
     def set_mode(self, mode='USB', passband=-1):
@@ -51,8 +52,8 @@ class RadioControl:
 
         cur_mode = self.get_mode()
 
-        if (cur_mode != mode + '\n' + str(passband)):
-            print(f"Failed to set mode. Currently set to: {cur_mode}, but and tried to set to {mode}")
+        if  ((cur_mode[0] != mode) or (passband not in [-1, 0, int(cur_mode[1])])):
+            print(f"Failed to set mode. Currently set to: {cur_mode[0]},{cur_mode[1]} tried to set to {mode}, {str(cur_mode[1])}")
             return -1
         return 0
 
