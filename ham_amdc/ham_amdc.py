@@ -26,18 +26,19 @@ class HamAMDC():
         self.modulator = FT8Modulator(sample_rate=self.config['general_config']['sample_rate'])
 
         if (self.config['general_config']['end_behaviour'] == "stop"):
-            for iteration_set in self.config['iteration_sets']:
-                self.__interpret_iteration_set(iteration_set)
-            return 0
+            for i, iteration_set in enumerate(self.config['iteration_sets']):
+                is_last = (i == len(self.config['iteration_sets']) - 1)
+                    self.__interpret_iteration_set(iteration_set, is_last)
+                    return 0
         elif (self.config['general_config']['end_behaviour'] == "loop"):
             while(True):
                 for iteration_set in self.config['iteration_sets']:
-                    self.__interpret_iteration_set(iteration_set)
+                    self.__interpret_iteration_set(iteration_set, False)
         return -1
 
-    def __interpret_iteration_set(self, itset):
+    def __interpret_iteration_set(self, itset, is_last):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
-            print(f"Running iteration {i+1} of iteration_set {itset['iteration_set_id']}...")
+            print(f"Running iteration {i+1}/{range(itset['n_iterations'])} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
@@ -65,7 +66,7 @@ class HamAMDC():
             duration = itset['listening_time'] * 60  # duration in seconds
 
             while ((time.time() - start_time) < duration):
-                pkt_type, pkt = wsjtx.receive_pkt({'DecodePacket', 'StatusPacket'})
+                pkt_type, pkt = self.wsjtx.receive_pkt({'DecodePacket', 'StatusPacket'})
                 if (pkt_type == 'StatusPacket'):
                     # Update internal values
                     decode_dataset.set_status_info(pkt)
@@ -75,10 +76,10 @@ class HamAMDC():
 
             # Transmission
             print("Finished listening to the channel, scheduling transmission...")
-            radio.transmit_samples(self, filename="", samples=samples, audio_device=self.config['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
+            self.radio.transmit_samples(filename="", samples=samples, audio_device=self.config['general_config']['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
 
             # Wait for PSK Reporter to update
-            print(f"Waiting {self.config['general_config']['psk_reporter_delay']}")
+            print(f"Waiting {self.config['general_config']['psk_reporter_delay']} minutes")
             start_time = time.time()
             duration = self.config['general_config']['psk_reporter_delay'] * 60  # duration in seconds
             while ((time.time() - start_time) < duration):
@@ -87,7 +88,7 @@ class HamAMDC():
             # Assembling data to storage
             output = {}
             output['receive_reports'] = decode_dataset.df
-            output['transmission_reports'] = decode_dataset.get_report(time=30)
+            output['transmission_reports'] = decode_dataset.get_report(time=15)
 
             output_name = (
                 f"./dataset/output/{itset['callsign']}_"
@@ -107,10 +108,12 @@ class HamAMDC():
             with gzip.open(output_name, 'wb') as f:
                 pickle.dump(output, f)
 
-            # Waiting time between iterations
-            start_time = time.time()
-            duration = itset['waiting_time'] * 60  # duration in seconds
-            while ((time.time() - start_time) < duration):
-                pass
-            return 0
+            # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
+            if not((is_last == True) and ((i+1) == itset['n_iterations'])):
+                start_time = time.time()
+                duration = itset['waiting_time'] * 60  # duration in seconds
+                while ((time.time() - start_time) < duration):
+                    pass
+
+        return 0
 
