@@ -2,6 +2,7 @@ import time
 import numpy as np
 import toml
 import gzip
+import datetime
 
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
@@ -38,7 +39,7 @@ class HamAMDC():
 
     def __interpret_iteration_set(self, itset, is_last):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
-            print(f"Running iteration {i+1}/{range(itset['n_iterations'])} of iteration_set {itset['iteration_set_id']}...")
+            print_with_time(f"Running iteration {i+1}/{itset['n_iterations']} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
@@ -54,14 +55,14 @@ class HamAMDC():
             decode_dataset = DecodeDataset(itset['callsign'])
 
             # Program starts after collecting status info
-            print("Waiting for WSJTX to start collecting data...")
+            print_with_time("Waiting for WSJTX to start collecting data...")
             _, pkt = self.wsjtx.receive_pkt({'StatusPacket'})
             decode_dataset.set_status_info(pkt) # Updating status information
 
             iteration_datetime_utc = time.gmtime() # This will be used to catalogue the different iterations
 
             # Listening the channel for the specified time
-            print(f"Listening the channel ({itset['listening_time']} minutes)...")
+            print_with_time(f"Listening the channel ({itset['listening_time']} minutes)...")
             start_time = time.time()
             duration = itset['listening_time'] * 60  # duration in seconds
 
@@ -75,11 +76,11 @@ class HamAMDC():
                     decode_dataset.add_new_sample(pkt)
 
             # Transmission
-            print("Finished listening to the channel, scheduling transmission...")
+            print_with_time("Finished listening to the channel, scheduling transmission...")
             self.radio.transmit_samples(filename="", samples=samples, audio_device=self.config['general_config']['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
 
             # Wait for PSK Reporter to update
-            print(f"Waiting {self.config['general_config']['psk_reporter_delay']} minutes")
+            print_with_time(f"Waiting {self.config['general_config']['psk_reporter_delay']} minutes before requesting report to PSKReporter...")
             start_time = time.time()
             duration = self.config['general_config']['psk_reporter_delay'] * 60  # duration in seconds
             while ((time.time() - start_time) < duration):
@@ -102,14 +103,16 @@ class HamAMDC():
                 f"{self.config['tx_power']}W_"
                 f"{self.config['listening_time']}min.pkl.gz"
             )
-            print(f"Finished iteration! Data is stored as {output_name}.")
 
             # Store everything and compress it
             with gzip.open(output_name, 'wb') as f:
                 pickle.dump(output, f)
 
+            print_with_time(f"Finished iteration! Data is stored as {output_name}.")
+
             # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
             if not((is_last == True) and ((i+1) == itset['n_iterations'])):
+                print_with_time(f" Waiting for {itset['waiting_time']} minutes before starting next iteration")
                 start_time = time.time()
                 duration = itset['waiting_time'] * 60  # duration in seconds
                 while ((time.time() - start_time) < duration):
@@ -117,3 +120,5 @@ class HamAMDC():
 
         return 0
 
+def print_with_time(msg):
+    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
