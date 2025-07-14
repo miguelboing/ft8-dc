@@ -3,6 +3,7 @@ import numpy as np
 import toml
 import gzip
 import datetime
+import pickle
 
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
@@ -29,13 +30,12 @@ class HamAMDC():
         if (self.config['general_config']['end_behaviour'] == "stop"):
             for i, iteration_set in enumerate(self.config['iteration_sets']):
                 is_last = (i == len(self.config['iteration_sets']) - 1)
-                    self.__interpret_iteration_set(iteration_set, is_last)
-                    return 0
+                self.__interpret_iteration_set(iteration_set, is_last)
+
         elif (self.config['general_config']['end_behaviour'] == "loop"):
             while(True):
                 for iteration_set in self.config['iteration_sets']:
                     self.__interpret_iteration_set(iteration_set, False)
-        return -1
 
     def __interpret_iteration_set(self, itset, is_last):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
@@ -98,10 +98,10 @@ class HamAMDC():
                 f"{iteration_datetime_utc.tm_mday}_"
                 f"{iteration_datetime_utc.tm_hour}_"
                 f"{iteration_datetime_utc.tm_min}_"
-                f"{self.config['freq_band']}Hz_"
-                f"{self.config['frequency']}Hz_"
-                f"{self.config['tx_power']}W_"
-                f"{self.config['listening_time']}min.pkl.gz"
+                f"{itset['freq_band']}Hz_"
+                f"{itset['frequency']}Hz_"
+                f"{itset['tx_power']}W_"
+                f"{itset['listening_time']}min.pkl.gz"
             )
 
             # Store everything and compress it
@@ -117,8 +117,6 @@ class HamAMDC():
                 duration = itset['waiting_time'] * 60  # duration in seconds
                 while ((time.time() - start_time) < duration):
                     pass
-
-        return 0
 
 def print_with_time(msg):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")

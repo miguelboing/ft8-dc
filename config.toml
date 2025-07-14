@@ -5,7 +5,7 @@ cat_tcp_server = "127.0.0.1"
 cat_tcp_port = 4532 # Be aware that this is not directly your radio's port but the rigctld port.
 tx_audio_channel = 65 # Use the script ./transmisson/radio_control/find_audiodevice.py to discover the channel's equivalent number
 sample_rate = 48000 # Sample Rate expected by your radio's audio channel.
-psk_reporter_delay = 30 # Time in minutes to wait for pskreporter update its database
+psk_reporter_delay = 6 # Time in minutes to wait for pskreporter update its database
 end_behaviour = "stop" # This defines what happens after the program runs all the iterations, set it to "loop" if you want the program to restart the data collection or "stop" if you want the program to return
 
 # This is the port externalized by WSJT-X that the program will use to read the incoming decoded packets.
@@ -21,10 +21,10 @@ freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
 frequency = 600 # This is the frequency (inside the band) in which the message will be transmitted.
 tx_power = 20 # Power in Watts.
 passband = -1 # Radio's passband in Hz (Flex radio's default is 2700 Hz leave as -1 to not change it)
-listening_time = 5 # This is how much time the application will listen to the selected band.
+listening_time = 1 # This is how much time the application will listen to the selected band.
 callsign = "M7NSE"
 locator = "IO93"
-waiting_time = 30 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
+waiting_time = 0 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
 
 # This is how you create anothet iteration set
 [[iteration_sets]] # This is where you automate your dataset acquisition iterations
@@ -37,5 +37,5 @@ passband = -1 # Radio's passband in Hz (Flex radio's default is 2700 Hz leave as
 listening_time = 5 # This is how much time (in minutes) the application will listen to the selected band.
 callsign = "M7LSI"
 locator = "IO93"
-waiting_time = 45 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
+waiting_time = 10 # This is the time (minutes) that the program will wait before going to the next iteration or iteration_set
 
