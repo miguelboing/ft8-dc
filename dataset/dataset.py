@@ -5,7 +5,7 @@ from dataset.psk_reporter.psk_reporter_httpclient import PSKReporter
 class Dataset(PSKReporter):
     def __init__(self, callsign, columns):
         self.df = pd.DataFrame(columns=columns, dtype="object")
-        PSKReporter().__init__(callsign)
+        super().__init__(callsign)
 
     # Export data into a dictionary
     def to_dict(self):
@@ -27,10 +27,6 @@ class Dataset(PSKReporter):
 
     def save_csv(self, name = ""):
         self.df.to_csv(name, index=False)
-
-    @property
-    def df(self):
-        return self.df
 
 class DecodeDataset(Dataset):
     decode_columns = ["wsjtx_id", "new_decode", "millis_since_midnight", "time",
