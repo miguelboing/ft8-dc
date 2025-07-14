@@ -3,11 +3,11 @@ import pandas as pd
 from io import StringIO
 import dataset.psk_reporter.listenerstationclusters as lsc
 
-class PSKReporter(lsc.ListenerStationClusters):
+class PSKReporter():
     url = "https://retrieve.pskreporter.info/query"
 
     def __init__(self, callsign):
-        self.senderCallsign = callsign,
+        self.senderCallsign = callsign
 
     def get_report(self, time=30):
         params = {
@@ -29,11 +29,11 @@ class PSKReporter(lsc.ListenerStationClusters):
 
         # Callsigns that were recently reported as active.
         df_active_cs = pd.read_xml(StringIO(xml_string), xpath=".//activeCallsign")
-        report['active_cs'] = len(df_2)
+        report['active_cs'] = df_active_cs
 
         # This are the stations that are currently active.
         df_active_receiver = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
-        lsc.ListernerStationClusters.__init__(self, df_reception_report, 11)
+        clusters = lsc.ListernerStationClusters(self, df_reception_report, 11)
         report['receptions'] = self.cluster_params
 
         # Contains the senderCallsign and the most recent unix epoch of when a transmission from senderCallsign was reported.
