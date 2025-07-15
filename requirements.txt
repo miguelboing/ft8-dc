@@ -1,0 +1,10 @@
+# List of dependencies
+toml
+numpy
+pandas
+requests
+geodatasets
+matplotlib
+geopandas
+scikit-learn
+lxml
