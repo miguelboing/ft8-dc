@@ -47,8 +47,8 @@ class HamAMDC():
                   return -1
 
             # Create the signal to be transmitted
-            print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={itset['frequency']}...")
-            signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], itset['frequency'], 0.0),]
+            print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={itset['freq_offset']}...")
+            signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], itset['freq_offset'], 0.0),]
             samples = self.modulator.generate_msg_samples(signals, filename="", norm_factor=0.89, dtype=np.float32)
 
             # Initialize the Receiver DF and PSK Reporter HTTP Server
@@ -99,7 +99,7 @@ class HamAMDC():
                 f"{iteration_datetime_utc.tm_hour}_"
                 f"{iteration_datetime_utc.tm_min}_"
                 f"{itset['freq_band']}Hz_"
-                f"{itset['frequency']}Hz_"
+                f"{itset['freq_offset']}Hz_"
                 f"{itset['tx_power']}W_"
                 f"{itset['listening_time']}min.pkl.gz"
             )
