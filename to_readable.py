@@ -54,7 +54,7 @@ def main():
 
     dataset_sample['transmission_reports']['active_cs'].to_csv(dir_name + "/psk_active_cs.csv", index=False)
 
-    plot_clusters_and_save(dataset_sample['transmission_reports']['receptions'], dir_name)
+    plot_clusters_and_save(dataset_sample['transmission_reports']['activer_receivers'], dir_name)
 
     with open(dir_name + '/last_report_time.txt', 'w') as output:
         output.write(str(dataset_sample['transmission_reports']['last_report_time']))

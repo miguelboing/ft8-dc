@@ -98,7 +98,7 @@ class FT8DC():
             output['transmission_reports'] = decode_dataset.get_report(time=15)
 
             output_name = (
-                f"./dataset/output/{itset['callsign']}_"
+                f"./dataset/output/serialized_samples/{itset['callsign']}_"
                 f"{iteration_datetime_utc.tm_year}_"
                 f"{iteration_datetime_utc.tm_mon}_"
                 f"{iteration_datetime_utc.tm_mday}_"
@@ -111,6 +111,7 @@ class FT8DC():
             )
 
             # Store everything and compress it
+            os.makedirs(os.path.dirname("./dataset/output/serialized_samples/"), exist_ok=True)
             with gzip.open(output_name, 'wb') as f:
                 pickle.dump(output, f)
 
