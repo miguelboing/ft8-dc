@@ -16,6 +16,7 @@ wsjtx_udp_port = 2237
 # The iterations are a list of dictionaries. Each dictionary is an iteration of the software with the following parameters:
 [[iteration_sets]] # This is where you automate your dataset acquisition iterations
 iteration_set_id = "my_first_set_iteration"
+schedule_time = "-1" # Leave it as -1 if you want the iteration to start at anytime or pass "hh:mm" if you want to execute it at an specific time
 n_iterations = 1 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
 freq_offset = 600 # This is the frequency (inside the band) in which the message will be transmitted.
@@ -29,6 +30,7 @@ waiting_time = 0 # This is the time (minutes) that the program will wait before 
 # This is how you create anothet iteration set
 [[iteration_sets]] # This is where you automate your dataset acquisition iterations
 iteration_set_id = "my_second_set_iteration"
+schedule_time = "16:00" # Leave it as -1 if you want the iteration to start at anytime or pass "hh:mm" if you want to execute it at an specific time
 n_iterations = 2 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
 freq_offset = 1500 # This is the frequency (inside the band) in which the message will be transmitted.

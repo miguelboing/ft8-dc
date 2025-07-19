@@ -5,6 +5,8 @@ import gzip
 import datetime
 import pickle
 
+from datetime import datetime, timedelta
+
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
 from dataset.dataset import DecodeDataset
@@ -39,6 +41,10 @@ class FT8DC():
 
     def __interpret_iteration_set(self, itset, is_last):
         for i in range(itset['n_iterations']): #This will run n_iterations times the iteration
+
+            # If iteration_set_contais scheduled time wait for the time
+            wait_for_time(itset['schedule_time'])
+
             print_with_time(f"Running iteration {i+1}/{itset['n_iterations']} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
@@ -120,3 +126,24 @@ class FT8DC():
 
 def print_with_time(msg):
     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+
+def wait_for_time(time_string):
+    if (time_string == "-1"):
+        return
+
+    now = datetime.now()
+
+    # Define the target time
+    target_time = now.replace(hour=time_string[:2], minute=time_string[3:], second=0, microsecond=0)
+
+    # If the target time has already passed today, schedule for tomorrow
+    if target_time < now:
+        target_time += timedelta(days=1)
+
+    # Calculate the time difference in seconds
+    sleep_duration = (target_time - now).total_seconds()
+
+    print_with_time(f"Sleeping for {sleep_duration} seconds until {target_time.strftime('%H:%M:%S')}...")
+
+    # Sleep until the target time
+    time.sleep(sleep_duration)
