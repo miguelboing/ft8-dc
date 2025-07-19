@@ -10,7 +10,7 @@ from wsjtx_server.wsjtx_server import WSJTXUDPServer
 from dataset.dataset import DecodeDataset
 from transmission.modulation.modulator import FT8Modulator
 
-class HamAMDC():
+class FT8DC():
     def __init__(self):
         # Read the config file
         with open('config.toml', 'r') as f:
