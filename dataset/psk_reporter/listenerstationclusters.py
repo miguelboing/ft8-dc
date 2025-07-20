@@ -23,7 +23,6 @@ class ListenerStationClusters:
         df[['valid_coord', 'coord_y', 'coord_x']] = df['locator'].apply(lambda x: pd.Series(maidenhead_to_gcs(x)))
         # Delete a sample if it is not a valid_coord
         df.drop(df[df['valid_coord'] == -1].index, inplace=True)
-)
 
         # Count occurrences of each locator
         for locator in df['locator']:
