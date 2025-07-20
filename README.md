@@ -67,7 +67,7 @@
 
 8. **After the program finishes**, collected data will be saved at:  
    ```
-   ft8dc/dataset/output/
+   ft8dc/dataset/output/serialized_samples/
    ```  
    Each iteration generates a new sample file.
 
@@ -75,13 +75,13 @@
 
    - To convert a specific sample:
      ```bash
-     python to_readable_format.py ./dataset/output/sample_name.pkl.gz
+     python to_readable_format.py ./dataset/output/serialized_samples/sample_name.pkl.gz
      ```
      This creates a folder named after the sample and exports the data as `.csv` and `.txt` files.
 
    - To convert **all samples at once**:
      ```bash
-     python to_readable_format.py dataset/output/*
+     python to_readable_format.py dataset/output/serialized_samples/*
      ```
 
 ## Contributing
