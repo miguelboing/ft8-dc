@@ -35,6 +35,7 @@ class PSKReporter():
         df_active_receivers = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
         clusters = lsc.ListenerStationClusters(df_active_receivers, 11)
         report['active_receivers'] = clusters.clusters_params
+        report['maidenhead_matrix'] = clusters.distribution_matrix
 
         # Contains the senderCallsign and the most recent unix epoch of when a transmission from senderCallsign was reported.
         #df_sender_search = pd.read_xml(StringIO(xml_string), xpath=".//senderSearch")

@@ -15,9 +15,8 @@ class ListenerStationClusters:
         self.k = k
         self.clusters_params = []
 
-
         # Initialize an 18x18 matrix for letters A-R
-        distribution_matrix = np.zeros((18, 18), dtype=int)
+        self.distribution_matrix = np.zeros((18, 18), dtype=int)
 
         # Remove invalid locators of the dataset
         df[['valid_coord', 'coord_y', 'coord_x']] = df['locator'].apply(lambda x: pd.Series(maidenhead_to_gcs(x)))
@@ -30,7 +29,7 @@ class ListenerStationClusters:
                 row = ord(locator[0].upper()) - ord('A')
                 col = ord(locator[1].upper()) - ord('A')
                 if 0 <= row < 18 and 0 <= col < 18:
-                    distribution_matrix[row][col] += 1
+                    self.distribution_matrix[row][col] += 1
 
         # Clustering
         self.kmeans = KMeans(n_clusters=k, max_iter=10000, tol=1e-4, random_state=0, algorithm='elkan')
@@ -46,11 +45,9 @@ class ListenerStationClusters:
             cluster['inertia'] = np.sum((cluster_points - self.centers[i]) ** 2)/(len(cluster_points))
             cluster['density'] = len(cluster_points)
             cluster['center'] = self.centers[i]
-
             cluster['convex_hull'] = MultiPoint(cluster_points).convex_hull
 
             self.clusters_params.append(cluster)
-            self.clusters_params.append(distribution_matrix)
 
     def save_to_pklgz(self, name=""):
         with gzip.open(name + '_clusters.pkl.gz', 'wb') as f:
