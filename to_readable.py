@@ -36,27 +36,33 @@ def plot_clusters_and_save(clusters, filepath):
 
 def main():
 
-    print("Hello World!")
     full_name = sys.argv[1]
-    print(f"You passed: {full_name}")
     dir_name = full_name[:-7]
 
     with gzip.open(full_name, 'rb') as f:
         dataset_sample = pickle.load(f)
 
-    if os.path.exists(dir_name): # Delete if the directory alread exists
-        shutil.rmtree(dir_name)
+    grandparent = os.path.dirname(os.path.dirname(full_name))  # 'output'
+    file_base = os.path.splitext(os.path.basename(full_name))[0]  # 'file_name'
+    readable_path = os.path.join(grandparent, "readable_data", file_base)
     os.makedirs(dir_name, exist_ok=True) # Create a new directory (and any necessary parent directories)
 
-    dataset_sample['receive_reports'].to_csv(dir_name + "/wsjtx_reports.csv", index=False)
+    if os.path.exists(readable_path): # Delete if the directory alread exists
+        shutil.rmtree(readable_path)
+    os.makedirs(readable_path, exist_ok=True) # Create a new directory (and any necessary parent directories)
 
-    dataset_sample['transmission_reports']['reception_reports'].to_csv(dir_name + "/psk_reception_reports.csv", index=False)
+    dataset_sample['receive_reports'].to_csv(readable_path + "/wsjtx_reports.csv", index=False)
 
-    dataset_sample['transmission_reports']['active_cs'].to_csv(dir_name + "/psk_active_cs.csv", index=False)
+    dataset_sample['transmission_reports']['reception_reports'].to_csv(readable_path + "/psk_reception_reports.csv", index=False)
 
-    plot_clusters_and_save(dataset_sample['transmission_reports']['activer_receivers'], dir_name)
+    dataset_sample['transmission_reports']['active_cs'].to_csv(readable_path + "/psk_active_cs.csv", index=False)
 
-    with open(dir_name + '/last_report_time.txt', 'w') as output:
+    plot_clusters_and_save(dataset_sample['transmission_reports']['active_receivers'], readable_path)
+
+    with open(readable_path + '/maidenhead_matrix.txt', 'w') as output:
+        output.write(str(dataset_sample['transmission_reports']['maidenhead_matrix']))
+
+    with open(readable_path + '/last_report_time.txt', 'w') as output:
         output.write(str(dataset_sample['transmission_reports']['last_report_time']))
 
     return 0
