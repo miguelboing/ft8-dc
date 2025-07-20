@@ -3,6 +3,7 @@ import numpy as np
 import toml
 import gzip
 import datetime
+import os
 import pickle
 
 from transmission.radio_control.radio_control import RadioControl
@@ -23,6 +24,7 @@ class FT8DC():
 
         # Initialize the UDP Server
         self.wsjtx = WSJTXUDPServer(ip=self.config['general_config']['wsjtx_udp_server'], port=self.config['general_config']['wsjtx_udp_port'])
+        self.wsjtx.disable_socket()
 
         # Initialize the FT8 Modulator
         self.modulator = FT8Modulator(sample_rate=self.config['general_config']['sample_rate'])
@@ -60,6 +62,7 @@ class FT8DC():
 
             # Program starts after collecting status info
             print_with_time("Waiting for WSJTX to start collecting data...")
+            self.wsjtx.enable_socket()
             _, pkt = self.wsjtx.receive_pkt({'StatusPacket'})
             decode_dataset.set_status_info(pkt) # Updating status information
 
@@ -78,6 +81,8 @@ class FT8DC():
 
                 elif (pkt_type == 'DecodePacket'):
                     decode_dataset.add_new_sample(pkt)
+
+            self.wsjtx.disable_socket()
 
             # Transmission
             print_with_time("Finished listening to the channel, scheduling transmission...")
@@ -133,7 +138,7 @@ def wait_for_time(time_string):
     now = datetime.datetime.now()
 
     # Define the target time
-    target_time = now.replace(hour=time_string[:2], minute=time_string[3:], second=0, microsecond=0)
+    target_time = now.replace(hour=int(time_string[:2]), minute=int(time_string[3:]), second=0, microsecond=0)
 
     # If the target time has already passed today, schedule for tomorrow
     if target_time < now:
