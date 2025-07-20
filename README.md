@@ -10,6 +10,7 @@
 1. A radio transceiver that supports CAT (Computer Aided Transceiver) control and uses audio channels for transmission and reception.
 2. WSJT-X (version 2.7.0 or later).
 3. On Linux systems, you must install rigctld. For example, on Fedora you can directly use the package manager: `dnf install rigctld`
+4. Python (3.13 or later)
 
 ## Installation
 1. Clone the repository `git clone https://github.com/miguelboing/ft8dc.git`.
