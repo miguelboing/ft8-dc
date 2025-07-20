@@ -2,7 +2,7 @@ import os
 import sys
 import pathlib
 
-from ham_amdc.ham_amdc import HamAMDC
+from ft8dc.ft8dc import FT8DC
 
 sys.path.append(str(pathlib.Path(os.path.realpath(__file__)).parents[1]))
 

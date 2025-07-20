@@ -5,8 +5,6 @@ import gzip
 import datetime
 import pickle
 
-from datetime import datetime, timedelta
-
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
 from dataset.dataset import DecodeDataset
@@ -132,14 +130,14 @@ def wait_for_time(time_string):
     if (time_string == "-1"):
         return
 
-    now = datetime.now()
+    now = datetime.datetime.now()
 
     # Define the target time
     target_time = now.replace(hour=time_string[:2], minute=time_string[3:], second=0, microsecond=0)
 
     # If the target time has already passed today, schedule for tomorrow
     if target_time < now:
-        target_time += timedelta(days=1)
+        target_time += datetime.timedelta(days=1)
 
     # Calculate the time difference in seconds
     sleep_duration = (target_time - now).total_seconds()
@@ -148,3 +146,4 @@ def wait_for_time(time_string):
 
     # Sleep until the target time
     time.sleep(sleep_duration)
+
