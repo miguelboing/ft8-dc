@@ -1,3 +1,7 @@
+# This file is part of the ft8dc project.
+# Originally from py-wsjtx (https://github.com/bmo/py-wsjtx)
+# Licensed under the MIT License. See LICENSE.MIT in this directory.
+
 import struct
 import datetime
 import math

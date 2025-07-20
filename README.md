@@ -92,3 +92,13 @@ Version v0.1 is fully functional, but several components can be improved. Curren
 
 For additional improvements, known issues, and feature requests, please refer to the issues page.
 
+## Credits and Licensing
+
+This project includes and modifies code from `ft8.py`, originally written by James Kelly (VK3JPK), licensed under GPLv3.
+
+The FT8 protocol and algorithms are based on WSJT-X by Joe Taylor (K1JT). More information: WSJT-X
+
+Additionally, this project includes code from py-wsjtx, specifically the file `wsjtx_server/pywsjtx_packets.py`, which is licensed under the MIT License. A copy of the original MIT license is included in the same directory as the used file (`LICENSE`).
+
+All modifications and additions to this project are licensed under the GNU General Public License v3.0 or later.
+
