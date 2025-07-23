@@ -5,6 +5,7 @@ import gzip
 import datetime
 import os
 import pickle
+import random
 
 from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
@@ -18,6 +19,8 @@ class FT8DC():
             self.config = toml.load(f)
 
         print(self.config)
+
+        self.curr_freq_offset = 0
 
         # Initialize the radio
         self.radio = RadioControl(port=self.config['general_config']['cat_tcp_server'] + ':' + str(self.config['general_config']['cat_tcp_port']))
@@ -52,9 +55,20 @@ class FT8DC():
             if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']))):
                   return -1
 
+            if (itset['freq_offset'] == -1): # Set a new random frequency
+                self.curr_freq_offset = random.randint(100, 1800)
+                print(f"Generating random frequency {self.curr_freq_offset}")
+
+            else if (itset['freq_offset'] == 0): # Just uses the same frequency
+                print(f"Using frequency from the previous iteration...")
+
+            else:
+                print(f"Changing the frequency to {itset['freq_offset']}...")
+                self.curr_freq_offset = itset['freq_offset']
+
             # Create the signal to be transmitted
-            print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={itset['freq_offset']}...")
-            signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], itset['freq_offset'], 0.0),]
+            print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={self.curr_freq_offset}...")
+            signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], self.curr_freq_offset, 0.0),]
             samples = self.modulator.generate_msg_samples(signals, filename="", norm_factor=0.89, dtype=np.float32)
 
             # Initialize the Receiver DF and PSK Reporter HTTP Server
@@ -108,7 +122,7 @@ class FT8DC():
                 f"{iteration_datetime_utc.tm_hour}_"
                 f"{iteration_datetime_utc.tm_min}_"
                 f"{itset['freq_band']}Hz_"
-                f"{itset['freq_offset']}Hz_"
+                f"{self.curr_freq_offset}Hz_"
                 f"{itset['tx_power']}W_"
                 f"{itset['listening_time']}min.pkl.gz"
             )
