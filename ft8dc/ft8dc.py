@@ -56,7 +56,7 @@ class FT8DC():
                   return -1
 
             if (itset['freq_offset'] == -1): # Set a new random frequency
-                self.curr_freq_offset = random.randint(100, 1800)
+                self.curr_freq_offset = random.randint(500, 1500)
                 print(f"Generating random frequency {self.curr_freq_offset}")
 
             else if (itset['freq_offset'] == 0): # Just uses the same frequency
