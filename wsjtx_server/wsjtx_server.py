@@ -8,16 +8,7 @@ class WSJTXUDPServer:
         self.port = port
         self.bufferSize = bufferSize
 
-        # Create socket
-        self.UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-        # Enable multiple connections
-        self.UDPServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        # Bind the address and IP
-        self.UDPServerSocket.bind((ip, port))
-
-        print("UDP server up and listening")
+        self.enable_socket()
 
     def __recv_pkt(self):
         pkt, addr_port = self.UDPServerSocket.recvfrom(self.bufferSize)
@@ -65,4 +56,17 @@ class WSJTXUDPServer:
         print(pkt)
 
         return pkt.get_class_name(), pkt.to_dict()
+
+    def enable_socket(self):
+            # Create socket
+           self.UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+           # Enable multiple connections
+           self.UDPServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+           # Bind the address and IP
+           self.UDPServerSocket.bind((self.ip, self.port))
+
+    def disable_socket(self):
+            self.UDPServerSocket.close()
 

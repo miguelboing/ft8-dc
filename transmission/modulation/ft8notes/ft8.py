@@ -9,6 +9,9 @@
 # Based on protocols and algorithms from WSJT-X, Copyright (C) 2001-2019 Joe Taylor, K1JT
 # See https://physics.princeton.edu/pulsar/k1jt/wsjtx.html for further information on WSJT-X
 
+# Modifications made by Miguel Boing, 2025
+# Part of the ft8dc project: https://github.com/miguelboing/ft8dc
+
 import numpy as np
 import scipy.signal
 

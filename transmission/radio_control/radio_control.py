@@ -4,7 +4,6 @@ import subprocess
 import sounddevice as sd
 import soundfile as sf
 
-import sched
 import time
 from datetime import datetime, timedelta, UTC
 
@@ -26,13 +25,11 @@ class RadioControl:
         self.port= port
         self.max_power_W = max_power_W
 
-        self.s = sched.scheduler(time.time, time.sleep)
-
     def get_if_frequency(self):
         return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'f'], capture_output=True, text=True).stdout.strip().splitlines()[-1]
 
     def get_mode(self):
-        return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'm'], capture_output=True, text=True).stdout.strip().splitlines()[-1]
+        return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'm'], capture_output=True, text=True).stdout.strip().splitlines()[-2:]
 
     def get_tx_power(self):
         return round(self.max_power_W * float((subprocess.run(['rigctl-wsjtx', '-m', self.m, '-r', self.port, 'l', 'RFPOWER'], capture_output=True, text=True).stdout.strip()).splitlines()[-1]))
@@ -44,8 +41,9 @@ class RadioControl:
         cur_freq = self.get_if_frequency()
 
         if (cur_freq != str(frequency)):
-            print("Failed to set the frequency. Currently set to: {result}")
+            print(f"Failed to set the frequency. Currently set to: {cur_freq}, tried to set to {str(frequency)}")
             return -1
+
         return 0
 
     def set_mode(self, mode='USB', passband=-1):
@@ -54,8 +52,8 @@ class RadioControl:
 
         cur_mode = self.get_mode()
 
-        if (cur_mode != mode + '\n' + str(passband)):
-            print(f"Failed to set mode. Currently set to: {cur_mode}, but and tried to set to {mode}")
+        if  ((cur_mode[0] != mode) or (passband not in [-1, 0, int(cur_mode[1])])):
+            print(f"Failed to set mode. Currently set to: {cur_mode[0]},{cur_mode[1]} tried to set to {mode}, {str(cur_mode[1])}")
             return -1
         return 0
 
@@ -89,14 +87,18 @@ class RadioControl:
         print(f"Waiting until: {target} (sleeping {delay:.3f} seconds)")
         time.sleep(delay)
 
-    def transmit_audio_file(self, filename):
-        file_data, file_sample_rate = sf.read(filename, dtype=np.float32)
+    def transmit_samples(self, filename="", samples=None, sample_rate=None, audio_device=-1, dtype=np.float32):
+        if (filename == ""):
+            file_data = samples
+            file_sample_rate = sample_rate
+        else:
+            file_data, file_sample_rate = sf.read(filename, dtype=dtype)
 
-        # Automatically find the index for the output_device_name
-        device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
+#        # Automatically find the index for the output_device_name
+#        device_info = next(dev for dev in sd.query_devices() if output_device_name in dev['name'])
 
-        print(f"Selected device: {device_info['name']}")
-        print(f"Max output channels: {device_info['max_output_channels']}")
+#        print(f"Selected device: {device_info['name']}")
+#        print(f"Max output channels: {device_info['max_output_channels']}")
 
         self.wait_until_next_15s()
 
@@ -105,7 +107,7 @@ class RadioControl:
             subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'T', '3'])
 
             # Play audio
-            sd.play(file_data, samplerate=file_sample_rate, device=65, blocksize=int(0.025 * file_sample_rate), latency="low")# channels=1)
+            sd.play(file_data, samplerate=file_sample_rate, device=audio_device, blocksize=int(0.025 * file_sample_rate), latency="low")# channels=1)
             sd.wait()
 
             # Disabling PPT for the radio
@@ -118,18 +120,4 @@ class RadioControl:
             print("Failed to transmit, returned to RX mode")
 
         return -1
-
-def main():
-    radio = RadioControl()
-    print("Hello World!")
-
-    print(radio.set_tx_power(20))
-    print(radio.set_if_frequency())
-
-    print(radio.transmit_audio_file("../audio_files/ft8_audio_float32_mono_48000.wav"))
-
-    return 0
-
-if __name__ == '__main__':
-    main()
 

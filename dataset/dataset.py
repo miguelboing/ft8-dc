@@ -1,9 +1,11 @@
 import pandas as pd
 
-class Dataset:
-    def __init__(self, filename, columns):
+from dataset.psk_reporter.psk_reporter_httpclient import PSKReporter
+
+class Dataset(PSKReporter):
+    def __init__(self, callsign, columns):
         self.df = pd.DataFrame(columns=columns, dtype="object")
-        self.filename = filename
+        super().__init__(callsign)
 
     # Export data into a dictionary
     def to_dict(self):
@@ -19,12 +21,12 @@ class Dataset:
 
     #Use this method to import the csv to a dataframe
     @classmethod
-    def from_csv(cls, columns):
-        data = pd.read_csv(self.filename)
+    def from_csv(cls, name, columns):
+        data = pd.read_csv(name)
         return cls(data.to_dict(orient='records'), columns)
 
-    def save_csv(self):
-        self.df.to_csv(self.filename, index=False)
+    def save_csv(self, name = ""):
+        self.df.to_csv(name, index=False)
 
 class DecodeDataset(Dataset):
     decode_columns = ["wsjtx_id", "new_decode", "millis_since_midnight", "time",
@@ -40,15 +42,14 @@ class DecodeDataset(Dataset):
 
     columns = decode_columns + status_columns
 
-    def __init__(self):
+    def __init__(self, callsign):
         self.status_dict = {}
-        Dataset.__init__(self, './dataset/output/' + 'decodedataset.csv', self.columns)
+        Dataset.__init__(self, callsign, self.columns)
 
     def set_status_info(self, status_dict):
         self.status_dict = status_dict
 
     def add_new_sample(self, sample_dict):
-
         sample_dict.update(self.status_dict)
 
         df_temp = pd.DataFrame([sample_dict], columns=self.columns)

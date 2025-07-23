@@ -4,9 +4,10 @@ import geodatasets
 import pickle
 import matplotlib.pyplot as plt
 import geopandas as gpd
-from maidenhead_converter import maidenhead_to_gcs
 from sklearn.cluster import KMeans
 from shapely.geometry import Point, MultiPoint
+
+from dataset.psk_reporter.maidenhead_converter import maidenhead_to_gcs
 
 class ListenerStationClusters:
     def __init__(self, df, k=11):
@@ -14,10 +15,21 @@ class ListenerStationClusters:
         self.k = k
         self.clusters_params = []
 
+        # Initialize an 18x18 matrix for letters A-R
+        self.distribution_matrix = np.zeros((18, 18), dtype=int)
+
         # Remove invalid locators of the dataset
         df[['valid_coord', 'coord_y', 'coord_x']] = df['locator'].apply(lambda x: pd.Series(maidenhead_to_gcs(x)))
         # Delete a sample if it is not a valid_coord
         df.drop(df[df['valid_coord'] == -1].index, inplace=True)
+
+        # Count occurrences of each locator
+        for locator in df['locator']:
+            if (isinstance(locator, str)) and (locator[0].isalpha()) and (locator[1].isalpha()):
+                row = ord(locator[0].upper()) - ord('A')
+                col = ord(locator[1].upper()) - ord('A')
+                if 0 <= row < 18 and 0 <= col < 18:
+                    self.distribution_matrix[row][col] += 1
 
         # Clustering
         self.kmeans = KMeans(n_clusters=k, max_iter=10000, tol=1e-4, random_state=0, algorithm='elkan')
@@ -33,13 +45,9 @@ class ListenerStationClusters:
             cluster['inertia'] = np.sum((cluster_points - self.centers[i]) ** 2)/(len(cluster_points))
             cluster['density'] = len(cluster_points)
             cluster['center'] = self.centers[i]
-
             cluster['convex_hull'] = MultiPoint(cluster_points).convex_hull
-            self.clusters_params.append(cluster)
 
-    @property
-    def cluster_params(self):
-        return self.clusters_params
+            self.clusters_params.append(cluster)
 
     def save_to_pklgz(self, name=""):
         with gzip.open(name + '_clusters.pkl.gz', 'wb') as f:

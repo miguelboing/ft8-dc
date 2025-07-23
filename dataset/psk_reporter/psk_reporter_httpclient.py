@@ -1,22 +1,22 @@
 import requests
 import pandas as pd
 from io import StringIO
-import listernerstationclusters as lsc
+import dataset.psk_reporter.listenerstationclusters as lsc
 
-class HTTP_Client(lsc.ListernerStationClusters):
+class PSKReporter():
     url = "https://retrieve.pskreporter.info/query"
 
     def __init__(self, callsign):
-        self.senderCallsign = callsign,
+        self.senderCallsign = callsign
 
-    def get_report(self, time=30, name=""):
+    def get_report(self, time=30):
         params = {
             "senderCallsign" : self.senderCallsign,
             "time": time
         }
 
         # Sending a request to PSK Reporter
-        r = requests.get(url, params=params)
+        r = requests.get(self.url, params=params)
 
         report = {}
 
@@ -29,12 +29,13 @@ class HTTP_Client(lsc.ListernerStationClusters):
 
         # Callsigns that were recently reported as active.
         df_active_cs = pd.read_xml(StringIO(xml_string), xpath=".//activeCallsign")
-        report['active_cs'] = len(df_2)
+        report['active_cs'] = df_active_cs
 
         # This are the stations that are currently active.
-        df_active_receiver = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
-        lsc.ListernerStationClusters.__init__(self, df_reception_report, 11)
-        report['receptions'] = self.cluster_params
+        df_active_receivers = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
+        clusters = lsc.ListenerStationClusters(df_active_receivers, 11)
+        report['active_receivers'] = clusters.clusters_params
+        report['maidenhead_matrix'] = clusters.distribution_matrix
 
         # Contains the senderCallsign and the most recent unix epoch of when a transmission from senderCallsign was reported.
         #df_sender_search = pd.read_xml(StringIO(xml_string), xpath=".//senderSearch")
@@ -49,5 +50,4 @@ class HTTP_Client(lsc.ListernerStationClusters):
         print(report)
 
         return report
-
 

@@ -1,10 +1,11 @@
 import numpy as np
-import ft8notes.ft8 as ft8
 import scipy.signal
 import scipy.special
 from scipy.io.wavfile import write
 
-class FT8_Transmitter:
+import transmission.modulation.ft8notes.ft8 as ft8
+
+class FT8Modulator:
     def __init__(self, b=ft8.gaussian_bandwidth, sample_rate=12000):
 
         self.sample_rate = sample_rate
@@ -83,7 +84,7 @@ class FT8_Transmitter:
 
         return signal_array
 
-    def save_to_wav(self, signals, filename, norm_factor=1000, dtype=np.int16):
+    def generate_msg_samples(self, signals, filename="", norm_factor=1000, dtype=np.int16):
         """Simulate a passband containing multiple FT8 signals and noise"""
         # signals is a list of signal tuples
         # filename is the desired name for the WAV file - samples are in a 16-bit signed mono format
@@ -105,6 +106,9 @@ class FT8_Transmitter:
             t = np.linspace(0, ft8.tr_period, num=len(samples))
 
         # Saving in to wav format
-        write(filename, self.sample_rate, samples.astype(dtype))
+        if (filename == ""):
+            return samples.astype(dtype)
+        else:
+            write(filename, self.sample_rate, samples.astype(dtype))
 
         return 0
