@@ -25,6 +25,9 @@ class RadioControl:
         self.port= port
         self.max_power_W = max_power_W
 
+        # Always start the radio in RX mode
+        self.rx_mode()
+
     def get_if_frequency(self):
         return subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'f'], capture_output=True, text=True).stdout.strip().splitlines()[-1]
 
@@ -56,6 +59,9 @@ class RadioControl:
             print(f"Failed to set mode. Currently set to: {cur_mode[0]},{cur_mode[1]} tried to set to {mode}, {str(cur_mode[1])}")
             return -1
         return 0
+
+    def rx_mode(self)
+        subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'T', '0'])
 
     def set_tx_power(self, power_W):
         if (power_W > self.max_power_W):
