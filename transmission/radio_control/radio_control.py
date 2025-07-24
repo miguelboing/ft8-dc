@@ -60,7 +60,7 @@ class RadioControl:
             return -1
         return 0
 
-    def rx_mode(self)
+    def rx_mode(self):
         subprocess.run([rigctl, '-m', self.m, '-r', self.port, 'T', '0'])
 
     def set_tx_power(self, power_W):
