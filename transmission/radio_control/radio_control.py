@@ -62,7 +62,7 @@ class RadioControl:
             print(f"Failed to change the TX power, maximum power is {self.max_power_W} but request to set power to {power_W}")
             return -1
 
-        power = round(power_W/self.max_power_W, 1)
+        power = round(power_W/self.max_power_W, 2)
         subprocess.run(['rigctl-wsjtx', '-m', self.m, '-r', self.port, 'L', 'RFPOWER', str(power)])
 
         cur_power = self.get_tx_power()
