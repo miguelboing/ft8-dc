@@ -51,8 +51,9 @@ class FT8DC():
             print_with_time(f"Running iteration {i+1}/{itset['n_iterations']} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
+            self.radio.rx_mode()
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
-            if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']))):
+            if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']) != 0)):
                   return -1
 
             if (itset['freq_offset'] == -1): # Set a new random frequency
