@@ -59,7 +59,7 @@ class FT8DC():
                 self.curr_freq_offset = random.randint(500, 1500)
                 print(f"Generating random frequency {self.curr_freq_offset}")
 
-            else if (itset['freq_offset'] == 0): # Just uses the same frequency
+            elif (itset['freq_offset'] == 0): # Just uses the same frequency
                 print(f"Using frequency from the previous iteration...")
 
             else:
