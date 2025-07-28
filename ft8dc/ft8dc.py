@@ -11,6 +11,7 @@ from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
 from dataset.dataset import DecodeDataset
 from transmission.modulation.modulator import FT8Modulator
+import transmission.atu as atu
 
 class FT8DC():
     def __init__(self):
@@ -55,6 +56,23 @@ class FT8DC():
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
             if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']) != 0)):
                   return -1
+
+            # ATU
+            skip_iteration = False
+            for attempt in range(1, self.config['atu_max_retries'] + 1): # Tries to tune 5 times
+                try:
+                    atu.flex6xxx_atu()
+                    break
+
+                except ValueError as ve:
+                    print(f"Attempt {attempt} failed: {ve}")
+                    if (attempt == self.config['atu_max_retries'])
+                    skip_iteration = True
+
+            if (skip_iteration == True):
+                print("Failed to tune the radio, returning...")
+
+                exit()
 
             if (itset['freq_offset'] == -1): # Set a new random frequency
                 self.curr_freq_offset = random.randint(500, 1500)
