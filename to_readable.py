@@ -45,7 +45,6 @@ def main():
     grandparent = os.path.dirname(os.path.dirname(full_name))  # 'output'
     file_base = os.path.splitext(os.path.basename(full_name))[0]  # 'file_name'
     readable_path = os.path.join(grandparent, "readable_data", file_base)
-    os.makedirs(dir_name, exist_ok=True) # Create a new directory (and any necessary parent directories)
 
     if os.path.exists(readable_path): # Delete if the directory alread exists
         shutil.rmtree(readable_path)

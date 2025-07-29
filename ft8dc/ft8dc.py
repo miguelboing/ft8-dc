@@ -11,6 +11,7 @@ from transmission.radio_control.radio_control import RadioControl
 from wsjtx_server.wsjtx_server import WSJTXUDPServer
 from dataset.dataset import DecodeDataset
 from transmission.modulation.modulator import FT8Modulator
+import transmission.atu as atu
 
 class FT8DC():
     def __init__(self):
@@ -51,15 +52,39 @@ class FT8DC():
             print_with_time(f"Running iteration {i+1}/{itset['n_iterations']} of iteration_set {itset['iteration_set_id']}...")
 
             # Setting radio configurations
+            self.radio.rx_mode()
             print(f"Configuring radio with TX_power={itset['tx_power']}W bandwidth={itset['passband']} Hz and central frequency={itset['freq_band']}...")
-            if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']))):
+            if ((self.radio.set_tx_power(itset['tx_power']) != 0) or (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0) or (self.radio.set_if_frequency(itset['freq_band']) != 0)):
                   return -1
+
+            # ATU
+            atu_handler = getattr(atu, self.config['general_config']['atu_handler'], None)
+
+            if not callable(atu_handler): # Check if a valid function is being passed
+                print("Invalid atu handler, check the atu_handler parameter.")
+                exit()
+
+            skip_iteration = False
+            for attempt in range(1, self.config['general_config']['atu_max_retries'] + 1): # Tries to tune 5 times
+                try:
+                    atu_handler()
+                    break
+
+                except ValueError as ve:
+                    print(f"Attempt {attempt} failed: {ve}")
+                    if (attempt == self.config['general_config']['atu_max_retries']):
+                        skip_iteration = True
+
+            if (skip_iteration == True):
+                print("Failed to tune the radio, returning...")
+
+                exit()
 
             if (itset['freq_offset'] == -1): # Set a new random frequency
                 self.curr_freq_offset = random.randint(500, 1500)
                 print(f"Generating random frequency {self.curr_freq_offset}")
 
-            else if (itset['freq_offset'] == 0): # Just uses the same frequency
+            elif (itset['freq_offset'] == 0): # Just uses the same frequency
                 print(f"Using frequency from the previous iteration...")
 
             else:

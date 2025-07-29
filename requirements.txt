@@ -8,3 +8,7 @@ matplotlib
 geopandas
 scikit-learn
 lxml
+sounddevice
+soundfile
+pyaudio
+
