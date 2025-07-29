@@ -6,6 +6,8 @@ cat_tcp_port = 4532 # Be aware that this is not directly your radio's port but t
 tx_audio_channel = 65 # Use the script ./transmisson/radio_control/find_audiodevice.py to discover the channel's equivalent number
 sample_rate = 48000 # Sample Rate expected by your radio's audio channel.
 psk_reporter_delay = 6 # Time in minutes to wait for pskreporter update its database
+atu_handler = "flex6xxx_atu" # This is the atu_handler in case you want to pass a function to match your radio's impedance before transmiting, you can add your custom function at "transmission/atu/atu.py" and refer to it in this field. If you don't want to use an atu handler pass the argument "none_atu".
+atu_max_retries = 5 # Number of times it will try to run the atu. If it fails after reaching the maximum number of attempts the iteration will be skipped.
 end_behaviour = "stop" # This defines what happens after the program runs all the iterations, set it to "loop" if you want the program to restart the data collection or "stop" if you want the program to return
 
 # This is the port externalized by WSJT-X that the program will use to read the incoming decoded packets.
@@ -19,7 +21,7 @@ iteration_set_id = "my_first_set_iteration"
 schedule_time = "-1" # Leave it as -1 if you want the iteration to start at anytime or pass "hh:mm" if you want to execute it at an specific time
 n_iterations = 1 # The number of iterations contained in this set, this is how much times we will repeat this configuration.
 freq_band = 14074000 # The equivalent frequency for the band (10m, 20m, etc..).
-freq_offset = 600 # This is the frequency (inside the band) in which the message will be transmitted.
+freq_offset = -1 # This is the frequency (inside the band) in which the message will be transmitted.
 tx_power = 20 # Power in Watts.
 passband = -1 # Radio's passband in Hz (Flex radio's default is 2700 Hz leave as -1 to not change it)
 listening_time = 1 # This is how much time (in minutes) the application will listen to the selected band.

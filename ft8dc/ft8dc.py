@@ -58,10 +58,16 @@ class FT8DC():
                   return -1
 
             # ATU
+            atu_handler = getattr(atu, self.config['atu_handler'], None)
+
+            if not callable(atu_handler): # Check if a valid function is being passed
+                print("Invalid atu handler, check the atu_handler parameter.")
+                exit()
+
             skip_iteration = False
             for attempt in range(1, self.config['atu_max_retries'] + 1): # Tries to tune 5 times
                 try:
-                    atu.flex6xxx_atu()
+                    atu_handler()
                     break
 
                 except ValueError as ve:
