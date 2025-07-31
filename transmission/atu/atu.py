@@ -57,3 +57,6 @@ def flex6xxx_atu():
 
     return 0
 
+def no_atu():
+    return 0
+
