@@ -10,9 +10,10 @@ class PSKReporter():
         self.senderCallsign = callsign
 
     def get_report(self, time=30):
+
         params = {
             "senderCallsign" : self.senderCallsign,
-            "time": time
+            "flowStartSeconds": time * (-60)
         }
 
         # Sending a request to PSK Reporter.
