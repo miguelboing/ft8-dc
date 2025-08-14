@@ -16,7 +16,7 @@ class ListenerStationClusters:
         self.clusters_params = []
 
         # Initialize an 18x18 matrix for letters A-R
-        self.distribution_matrix = np.zeros((18, 18), dtype=int)
+        self.distribution_matrix = np.zeros((180, 180), dtype=int)
 
         # Remove invalid locators of the dataset
         df[['valid_coord', 'coord_y', 'coord_x']] = df['locator'].apply(lambda x: pd.Series(maidenhead_to_gcs(x)))
