@@ -44,6 +44,11 @@ class PSKReporter():
             report['active_receivers'] = clusters.clusters_params
             report['maidenhead_matrix'] = clusters.distribution_matrix
 
+            df_active_receivers = pd.read_xml(StringIO(xml_string), xpath=".//activeReceiver")
+            df_active_receivers_reduced = df_active_receivers[['callsign', 'locator', 'frequency', 'mode']]
+            df_active_receivers_reduced = df_active_receivers_reduced[df_active_receivers_reduced['mode'] == "FT8"]
+            report['active_receivers'] = df_active_receivers_reduced
+
             # Contains the senderCallsign and the most recent unix epoch of when a transmission from senderCallsign was reported.
             #df_sender_search = pd.read_xml(StringIO(xml_string), xpath=".//senderSearch")
 
