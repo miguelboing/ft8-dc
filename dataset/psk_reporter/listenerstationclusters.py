@@ -23,13 +23,21 @@ class ListenerStationClusters:
         # Delete a sample if it is not a valid_coord
         df.drop(df[df['valid_coord'] == -1].index, inplace=True)
 
-        # Count occurrences of each locator
+        # Count occurrences
         for locator in df['locator']:
-            if (isinstance(locator, str)) and (locator[0].isalpha()) and (locator[1].isalpha()):
-                row = ord(locator[0].upper()) - ord('A')
-                col = ord(locator[1].upper()) - ord('A')
-                if 0 <= row < 18 and 0 <= col < 18:
-                    self.distribution_matrix[row][col] += 1
+            if isinstance(locator, str) and len(locator) >= 4:
+                if locator[0].isalpha() and locator[1].isalpha() and locator[2].isdigit() and locator[3].isdigit():
+                    field_row = ord(locator[0].upper()) - ord('A')      # 0–17
+                    field_col = ord(locator[1].upper()) - ord('A')      # 0–17
+                    square_row = int(locator[2])                        # 0–9
+                    square_col = int(locator[3])                        # 0–9
+
+                    # Combine into a finer grid index
+                    row = field_row * 10 + square_row
+                    col = field_col * 10 + square_col
+
+                    if 0 <= row < 180 and 0 <= col < 180:  # new max range
+                        self.distribution_matrix[row][col] += 1
 
         # Clustering
         self.kmeans = KMeans(n_clusters=k, max_iter=10000, tol=1e-4, random_state=0, algorithm='elkan')
