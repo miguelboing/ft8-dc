@@ -70,8 +70,8 @@ class FT8DC():
                     atu_handler()
                     break
 
-                except ValueError as ve:
-                    print(f"Attempt {attempt} failed: {ve}")
+                except Exception as e:
+                    print(f"Attempt {attempt} failed: {e}")
                     if (attempt == self.config['general_config']['atu_max_retries']):
                         skip_iteration = True
 
