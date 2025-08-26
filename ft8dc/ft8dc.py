@@ -134,7 +134,7 @@ class FT8DC():
                 # Assembling data to storage
                 output = {}
                 output['receive_reports'] = decode_dataset.df
-                output['transmission_reports'] = decode_dataset.get_report(time=15)
+                output['transmission_reports'] = decode_dataset.get_report(self.config['general_config']['appcontact'], time=15)
 
                 output_name = (
                     f"./dataset/output/serialized_samples/{itset['callsign']}_"

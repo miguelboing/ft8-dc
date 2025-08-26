@@ -15,6 +15,8 @@ end_behaviour = "stop" # This defines what happens after the program runs all th
 wsjtx_udp_server = "127.0.0.1"
 wsjtx_udp_port = 2237
 
+appcontact = "" # Recommended: Pass an email in case PSKReporter wants to contact you.
+
 # The iterations are a list of dictionaries. Each dictionary is an iteration of the software with the following parameters:
 [[iteration_sets]] # This is where you automate your dataset acquisition iterations
 iteration_set_id = "my_first_set_iteration"
