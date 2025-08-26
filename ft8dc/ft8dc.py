@@ -13,6 +13,9 @@ from dataset.dataset import DecodeDataset
 from transmission.modulation.modulator import FT8Modulator
 import transmission.atu as atu
 
+# This is optional, if you want a customized feedback error implement a function under extra/feedback.py
+from extra.feedback import feedback_handler
+
 class FT8DC():
     def __init__(self):
         # Read the config file
@@ -72,9 +75,15 @@ class FT8DC():
 
                 except Exception as e:
                     print(f"Attempt {attempt} failed: {e}")
+
+                    feedback_handler("Failed to tune using ATU, trying again...")
+
                     if (attempt == self.config['general_config']['atu_max_retries']):
                         skip_iteration = True
                         print("Failed to tune the radio, skiping this iteration...")
+
+                        feedback_handler("ATU failure skipping this iteration...")
+
 
             if (skip_iteration != True):
                 if (itset['freq_offset'] == -1): # Set a new random frequency
@@ -155,6 +164,7 @@ class FT8DC():
                     pickle.dump(output, f)
 
                 print_with_time(f"Finished iteration! Data is stored as {output_name}.")
+                feedback_handler(f"Finished iteration: {output_name}")
 
             # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
             if not((is_last == True) and ((i+1) == itset['n_iterations'])):
