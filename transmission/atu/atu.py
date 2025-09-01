@@ -3,57 +3,78 @@ import time
 
 def flex6xxx_atu():
     UDP_IP = "" # INADDR_ANY
-
     UDP_PORT = 4992
-
-    print("atu: Starting discovery...")
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    s.bind((UDP_IP, UDP_PORT))
-
-    data, addr = s.recvfrom(1024)
-
-    print (addr[0])     # IP ADDRESS
-
-    s.close()
-
-    #169.254.52.32
-
-    TCP_IP = addr[0]
-
     TCP_PORT = 4992
-
     BUFFER_SIZE = 16384
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # This checks if the discovery step is already done
+    if not hasattr(flex6xxx_atu, "tcp_addr"):
+        print("atu: Starting discovery...")
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.settimeout(5)
+        s.bind((UDP_IP, UDP_PORT))
 
-    s.connect((TCP_IP, TCP_PORT))
+        try:
+            data, addr = s.recvfrom(1024)
+            print (f"atu: Discovered address: {addr[0]}")
+            flex6xxx_atu.tcp_addr = addr[0] #169.254.52.32
+        except socket.timeout:
+            raise RuntimeError("atu: Discovery failed, no radio found")
+        finally:
+            s.close()
 
-    time.sleep(1)       # wait 1 second for receive buffer to fill
+    # This checks if the connection is already established
+    if getattr(flex6xxx_atu, "tcp_socket", None) is None:
+        print("Establishing TCP Connection...")
 
-    data_tcp = s.recv(BUFFER_SIZE)
+        flex6xxx_atu.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        flex6xxx_atu.tcp_socket.settimeout(10)
 
-    print(data_tcp)
+        try:
+            flex6xxx_atu.tcp_socket.connect((flex6xxx_atu.tcp_addr, TCP_PORT))
+            time.sleep(1)
 
-    print("atu: Sending tunning command...")
+            data_tcp = flex6xxx_atu.tcp_socket.recv(BUFFER_SIZE)
+            print(data_tcp)
 
-    s.send("C42|atu start\n".encode("cp1252"))
+        except(socket.error, socket.timeout) as e:
+            try:
+                flex6xxx_atu.tcp_socket.close()
+            except:
+                pass
 
-    time.sleep(1)
+            flex6xxx_atu.tcp_socket = None
+            raise RuntimeError(f"atu: Failed to connect to radio: {e}")
 
-    data_tcp = s.recv(BUFFER_SIZE)
+    try:
+        # Before sending the ATU command, drain any pending data
+        try:
+            flex6xxx_atu.tcp_socket.settimeout(0.1)  # Short timeout
+            while True:
+                flex6xxx_atu.tcp_socket.recv(BUFFER_SIZE)  # Drain buffer
+        except socket.timeout:
+            pass  # Buffer is now empty
+        finally:
+            flex6xxx_atu.tcp_socket.settimeout(10)  # Restore normal timeout
+        print("atu: Sending tuning command...")
+        flex6xxx_atu.tcp_socket.send("C42|atu start\n".encode("cp1252"))
+        time.sleep(1)
+        data_tcp = flex6xxx_atu.tcp_socket.recv(BUFFER_SIZE)
+        print(data_tcp)
 
-    print(data_tcp)
+        if not data_tcp or (data_tcp.splitlines()[0] != b'R42|0|'):
+            raise ValueError("atu: Failed to tune the radio with the antenna!")
+        print("atu: Tuning successfully completed.")
+    except (socket.error, socket.timeout, BrokenPipeError) as e:
+        print(f"atu: Connection error: {e}")
 
-    s.close()
-
-    if (data_tcp.splitlines()[0] != b'R42|0|'):
-        raise ValueError("atu: Failed to tune the radio with the antenna!")
-
-    print("atu: Tunning succesfully completed.")
+        try: # Close the broken connection
+            flex6xxx_atu.tcp_socket.close()
+        except:
+            pass
+        flex6xxx_atu.tcp_socket = None
+        raise RuntimeError(f"atu: Connection failed: {e}")
 
     return 0
 
