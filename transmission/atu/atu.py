@@ -7,6 +7,12 @@ def flex6xxx_atu():
     TCP_PORT = 4992
     BUFFER_SIZE = 16384
 
+    BASE_CMD_NUM = 1000000  # Start at 1 million
+    MAX_CMD_NUM = 1500000 # Ends at 1.5 million and then loops back
+
+    if not hasattr(flex6xxx_atu, "cmd_counter"):
+        flex6xxx_atu.cmd_counter = BASE_CMD_NUM
+
     # This checks if the discovery step is already done
     if not hasattr(flex6xxx_atu, "tcp_addr"):
         print("atu: Starting discovery...")
@@ -58,12 +64,20 @@ def flex6xxx_atu():
         finally:
             flex6xxx_atu.tcp_socket.settimeout(10)  # Restore normal timeout
         print("atu: Sending tuning command...")
-        flex6xxx_atu.tcp_socket.send("C42|atu start\n".encode("cp1252"))
+
+        flex6xxx_atu.tcp_socket.send(f"C{flex6xxx_atu.cmd_counter}|atu start\n".encode("cp1252"))
+
         time.sleep(1)
         data_tcp = flex6xxx_atu.tcp_socket.recv(BUFFER_SIZE)
         print(data_tcp)
 
-        if not data_tcp or (data_tcp.splitlines()[0] != b'R42|0|'):
+        expected_response = f"R{flex6xxx_atu.cmd_counter}|0|"
+
+        flex6xxx_atu.cmd_counter += 1
+        if (flex6xxx_atu.cmd_counter > MAX_CMD_NUM):
+            flex6xxx_atu.cmd_counter = BASE_CMD_NUM
+
+        if not data_tcp or (data_tcp.splitlines()[0] != expected_response.encode()):
             raise ValueError("atu: Failed to tune the radio with the antenna!")
         print("atu: Tuning successfully completed.")
     except (socket.error, socket.timeout, BrokenPipeError) as e:
