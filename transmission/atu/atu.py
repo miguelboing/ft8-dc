@@ -79,7 +79,11 @@ def flex6xxx_atu():
 
         if not data_tcp or (data_tcp.splitlines()[0] != expected_response.encode()):
             raise ValueError("atu: Failed to tune the radio with the antenna!")
+
+        # Wait 15s for the wc of tunning time
+        time.sleep(15)
         print("atu: Tuning successfully completed.")
+
     except (socket.error, socket.timeout, BrokenPipeError) as e:
         print(f"atu: Connection error: {e}")
 
