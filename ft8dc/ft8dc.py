@@ -70,7 +70,7 @@ class FT8DC():
             skip_iteration = False
             for attempt in range(1, self.config['general_config']['atu_max_retries'] + 1): # Tries to tune 5 times
                 try:
-                    atu_handler()
+                    swr = atu_handler()
                     break
 
                 except Exception as e:
@@ -84,6 +84,8 @@ class FT8DC():
 
                         feedback_handler("ATU failure skipping this iteration...")
 
+            if (swr >= 2):
+                feedback_handler(f"Warning: High SWR: {swr}!")
 
             if (skip_iteration != True):
                 if (itset['freq_offset'] == -1): # Set a new random frequency
@@ -144,6 +146,7 @@ class FT8DC():
                 output = {}
                 output['receive_reports'] = decode_dataset.df
                 output['transmission_reports'] = decode_dataset.get_report(self.config['general_config']['appcontact'], time=15)
+                output['swr'] = swr
 
                 output_name = (
                     f"./dataset/output/serialized_samples/{itset['callsign']}_"
@@ -163,8 +166,8 @@ class FT8DC():
                 with gzip.open(output_name, 'wb') as f:
                     pickle.dump(output, f)
 
-                print_with_time(f"Finished iteration! Data is stored as {output_name}.")
-                feedback_handler(f"Finished iteration: {output_name}")
+                print_with_time(f"Finished iteration! Data is stored as {output_name} and swr {swr}.")
+                feedback_handler(f"Finished iteration: {output_name} and swr {swr}.")
 
             # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
             if not((is_last == True) and ((i+1) == itset['n_iterations'])):
