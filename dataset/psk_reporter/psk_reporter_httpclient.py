@@ -29,9 +29,17 @@ class PSKReporter():
             # Reports that contains the given callsign.
             try:
                 df_reception_report = pd.read_xml(StringIO(xml_string), xpath=".//receptionReport")
+
             except ValueError as ve:
                 print("No reception reports...")
                 df_reception_report = pd.DataFrame()
+
+            except Exception as e:
+                print(f"Caught error {e}!")
+                with gzip.open('error_xml.pkl.gz', 'wb') as f:
+                   pickle.dump(r.text, f)
+                feedback_handler(f"Received an XML error.")
+                exit()
 
             report['reception_reports'] = df_reception_report
 
