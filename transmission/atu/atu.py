@@ -24,7 +24,6 @@ def flex6xxx_atu():
             flex6xxx_atu.tcp_socket.settimeout(10)  # Restore normal timeout
 
     def send_tcp_command(command):
-
         flush_tcp_buffer()
 
         message = f"C{flex6xxx_atu.cmd_counter}|{command}\n"
@@ -40,8 +39,8 @@ def flex6xxx_atu():
         if (flex6xxx_atu.cmd_counter > MAX_CMD_NUM):
             flex6xxx_atu.cmd_counter = BASE_CMD_NUM
 
-        if not data_tcp or (data_tcp.splitlines()[0] != expected_response.encode()):
-                raise ValueError(f"atu: Failed send command: {message}!")
+        if not data_tcp or (expected_response.encode() not in data_tcp.splitlines()):
+                raise ValueError(f"atu: Failed to confirm the error code: {message}!")
 
 
     def swr_enable_socket():
@@ -119,14 +118,16 @@ def flex6xxx_atu():
             flex6xxx_atu.tcp_socket = None
             raise RuntimeError(f"atu: Failed to connect to radio: {e}")
 
+    # Adding swr metric to dedicated udp port.
+    if getattr(flex6xxx_atu, "is_configured", None) is None:
         send_tcp_command(f"transmit set tunepower=10")
         send_tcp_command(f"sub meter 10")
         send_tcp_command(f"client udpport {SWR_R_UDP_PORT}")
 
+        flex6xxx_atu.is_configured = True
 
     try:
-        flush_tcp_buffer()
-        print("atu: Sending tuning command...")
+        print("atu: Starting atu sequence...")
         send_tcp_command(f"atu start")
 
         # Wait 15s for the wc of tunning time
