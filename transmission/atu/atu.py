@@ -1,7 +1,7 @@
 import socket
 import time
 
-def flex6xxx_atu():
+def flex6xxx_atu(tune_tx_power):
     UDP_IP = "" # INADDR_ANY
     UDP_PORT = 4992
     SWR_R_UDP_PORT = 4200
@@ -57,18 +57,19 @@ def flex6xxx_atu():
 
         return
 
-    def swr_read_value():
+    def swr_read_value(tune_tx_power):
 
         send_tcp_command(f"transmit tune on")
         time.sleep(1)
 
         swr_enable_socket()
-        data, _ = flex6xxx_atu.udp_swr_socket.recvfrom(1024)
+        for i in range(15):
+            data, _ = flex6xxx_atu.udp_swr_socket.recvfrom(1024)
 
-        if (data.hex()[-6:-4] == "0a"): # Checking if the received parameter is actually the SWR
-            swr = int.from_bytes(data[-2:], byteorder='big')/128
-        else:
-            swr = -1
+            if (data.hex()[-6:-4] == "0a"): # Checking if the received parameter is actually the SWR
+                swr_r = int.from_bytes(data[-2:], byteorder='big')/128
+                if (swr_r > swr): # Get the biggest value of swr
+                    swr = swr_r
 
         send_tcp_command(f"transmit tune off")
         swr_disable_socket()
@@ -135,7 +136,7 @@ def flex6xxx_atu():
         time.sleep(15)
         print("atu: Tuning successfully completed.")
 
-        swr = swr_read_value()
+        swr = swr_read_value(tune_tx_power)
 
     except (socket.error, socket.timeout, BrokenPipeError) as e:
         print(f"atu: Connection error: {e}")
