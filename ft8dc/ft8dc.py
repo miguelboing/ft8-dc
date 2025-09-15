@@ -70,7 +70,7 @@ class FT8DC():
             skip_iteration = False
             for attempt in range(1, self.config['general_config']['atu_max_retries'] + 1): # Tries to tune 5 times
                 try:
-                    swr = atu_handler()
+                    swr = atu_handler(itset['tx_power'])
                     break
 
                 except Exception as e:
@@ -84,10 +84,10 @@ class FT8DC():
 
                         feedback_handler("ATU failure skipping this iteration...")
 
-            if (swr >= 2):
-                feedback_handler(f"Warning: High SWR: {swr}!")
-
             if (skip_iteration != True):
+                if (swr >= 2.5):
+                    feedback_handler(f"Warning: High SWR: {swr}!")
+
                 if (itset['freq_offset'] == -1): # Set a new random frequency
                     self.curr_freq_offset = random.randint(500, 1500)
                     print(f"Generating random frequency {self.curr_freq_offset}")
