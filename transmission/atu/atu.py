@@ -60,8 +60,9 @@ def flex6xxx_atu():
     def swr_read_value():
 
         send_tcp_command(f"transmit tune on")
-        swr_enable_socket()
+        time.sleep(1)
 
+        swr_enable_socket()
         data, _ = flex6xxx_atu.udp_swr_socket.recvfrom(1024)
 
         if (data.hex()[-6:-4] == "0a"): # Checking if the received parameter is actually the SWR
