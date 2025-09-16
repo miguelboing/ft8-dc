@@ -27,6 +27,7 @@ def flex6xxx_atu(tune_tx_power):
         flush_tcp_buffer()
 
         message = f"C{flex6xxx_atu.cmd_counter}|{command}\n"
+        print(message)
         flex6xxx_atu.tcp_socket.send(message.encode("cp1252"))
 
         time.sleep(1)
@@ -58,6 +59,7 @@ def flex6xxx_atu(tune_tx_power):
         return
 
     def swr_read_value(tune_tx_power):
+        swr = -1
 
         send_tcp_command(f"transmit tune on")
         time.sleep(1)
@@ -73,6 +75,8 @@ def flex6xxx_atu(tune_tx_power):
 
         send_tcp_command(f"transmit tune off")
         swr_disable_socket()
+
+        print(f"SWR: {swr}!")
 
         return swr
 
