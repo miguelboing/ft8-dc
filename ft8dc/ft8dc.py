@@ -118,6 +118,9 @@ class FT8DC():
 
                 iteration_datetime_utc = time.gmtime() # This will be used to catalogue the different iterations
 
+                if (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0):
+                    feedback_handler("Failed to mode to USB")
+
                 # Listening the channel for the specified time
                 print_with_time(f"Listening the channel ({itset['listening_time']} minutes)...")
                 start_time = time.time()
@@ -135,6 +138,10 @@ class FT8DC():
                 self.wsjtx.disable_socket()
 
                 # Transmission
+
+                if (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0):
+                    feedback_handler("Failed to mode to USB")
+
                 print_with_time("Finished listening to the channel, scheduling transmission...")
                 self.radio.transmit_samples(filename="", samples=samples, audio_device=self.config['general_config']['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
 
