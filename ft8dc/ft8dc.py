@@ -13,6 +13,9 @@ from dataset.dataset import DecodeDataset
 from transmission.modulation.modulator import FT8Modulator
 import transmission.atu as atu
 
+# This is optional, if you want a customized feedback error implement a function under extra/feedback.py
+from extra.feedback import feedback_handler
+
 class FT8DC():
     def __init__(self):
         # Read the config file
@@ -67,97 +70,114 @@ class FT8DC():
             skip_iteration = False
             for attempt in range(1, self.config['general_config']['atu_max_retries'] + 1): # Tries to tune 5 times
                 try:
-                    atu_handler()
+                    swr = atu_handler(itset['tx_power'])
+
+                    if (swr >= 2.5):
+                        feedback_handler(f"High SWR: {swr}!")
+                        raise ValueError(f"High SWR: {swr}!")
+
                     break
 
-                except ValueError as ve:
-                    print(f"Attempt {attempt} failed: {ve}")
+                except Exception as e:
+                    print(f"Attempt {attempt} failed: {e}")
+
+                    feedback_handler("Failed to tune using ATU, trying again...")
+
                     if (attempt == self.config['general_config']['atu_max_retries']):
                         skip_iteration = True
+                        print("Failed to tune the radio, skiping this iteration...")
 
-            if (skip_iteration == True):
-                print("Failed to tune the radio, returning...")
+                        feedback_handler("ATU failure skipping this iteration...")
 
-                exit()
+            if not skip_iteration:
 
-            if (itset['freq_offset'] == -1): # Set a new random frequency
-                self.curr_freq_offset = random.randint(500, 1500)
-                print(f"Generating random frequency {self.curr_freq_offset}")
+                if (itset['freq_offset'] == -1): # Set a new random frequency
+                    self.curr_freq_offset = random.randint(500, 1500)
+                    print(f"Generating random frequency {self.curr_freq_offset}")
 
-            elif (itset['freq_offset'] == 0): # Just uses the same frequency
-                print(f"Using frequency from the previous iteration...")
+                elif (itset['freq_offset'] == 0): # Just uses the same frequency
+                    print(f"Using frequency from the previous iteration...")
 
-            else:
-                print(f"Changing the frequency to {itset['freq_offset']}...")
-                self.curr_freq_offset = itset['freq_offset']
+                else:
+                    print(f"Changing the frequency to {itset['freq_offset']}...")
+                    self.curr_freq_offset = itset['freq_offset']
 
-            # Create the signal to be transmitted
-            print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={self.curr_freq_offset}...")
-            signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], self.curr_freq_offset, 0.0),]
-            samples = self.modulator.generate_msg_samples(signals, filename="", norm_factor=0.89, dtype=np.float32)
+                # Create the signal to be transmitted
+                print(f"Generating transmission signal with callsign={itset['callsign']}, locator={itset['locator']} and frequency={self.curr_freq_offset}...")
+                signals = [self.modulator.create_signal('CQ', itset['callsign'], itset['locator'], self.curr_freq_offset, 0.0),]
+                samples = self.modulator.generate_msg_samples(signals, filename="", norm_factor=0.89, dtype=np.float32)
 
-            # Initialize the Receiver DF and PSK Reporter HTTP Server
-            decode_dataset = DecodeDataset(itset['callsign'])
+                # Initialize the Receiver DF and PSK Reporter HTTP Server
+                decode_dataset = DecodeDataset(itset['callsign'])
 
-            # Program starts after collecting status info
-            print_with_time("Waiting for WSJTX to start collecting data...")
-            self.wsjtx.enable_socket()
-            _, pkt = self.wsjtx.receive_pkt({'StatusPacket'})
-            decode_dataset.set_status_info(pkt) # Updating status information
+                # Program starts after collecting status info
+                print_with_time("Waiting for WSJTX to start collecting data...")
+                self.wsjtx.enable_socket()
+                _, pkt = self.wsjtx.receive_pkt({'StatusPacket'})
+                decode_dataset.set_status_info(pkt) # Updating status information
 
-            iteration_datetime_utc = time.gmtime() # This will be used to catalogue the different iterations
+                iteration_datetime_utc = time.gmtime() # This will be used to catalogue the different iterations
 
-            # Listening the channel for the specified time
-            print_with_time(f"Listening the channel ({itset['listening_time']} minutes)...")
-            start_time = time.time()
-            duration = itset['listening_time'] * 60  # duration in seconds
+                if (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0):
+                    feedback_handler("Failed to mode to USB")
 
-            while ((time.time() - start_time) < duration):
-                pkt_type, pkt = self.wsjtx.receive_pkt({'DecodePacket', 'StatusPacket'})
-                if (pkt_type == 'StatusPacket'):
-                    # Update internal values
-                    decode_dataset.set_status_info(pkt)
+                # Listening the channel for the specified time
+                print_with_time(f"Listening the channel ({itset['listening_time']} minutes)...")
+                start_time = time.time()
+                duration = itset['listening_time'] * 60  # duration in seconds
 
-                elif (pkt_type == 'DecodePacket'):
-                    decode_dataset.add_new_sample(pkt)
+                while ((time.time() - start_time) < duration):
+                    pkt_type, pkt = self.wsjtx.receive_pkt({'DecodePacket', 'StatusPacket'})
+                    if (pkt_type == 'StatusPacket'):
+                        # Update internal values
+                        decode_dataset.set_status_info(pkt)
 
-            self.wsjtx.disable_socket()
+                    elif (pkt_type == 'DecodePacket'):
+                        decode_dataset.add_new_sample(pkt)
 
-            # Transmission
-            print_with_time("Finished listening to the channel, scheduling transmission...")
-            self.radio.transmit_samples(filename="", samples=samples, audio_device=self.config['general_config']['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
+                self.wsjtx.disable_socket()
 
-            # Wait for PSK Reporter to update
-            print_with_time(f"Waiting {self.config['general_config']['psk_reporter_delay']} minutes before requesting report to PSKReporter...")
-            start_time = time.time()
-            duration = self.config['general_config']['psk_reporter_delay'] * 60  # duration in seconds
-            while ((time.time() - start_time) < duration):
-                pass
+                # Transmission
 
-            # Assembling data to storage
-            output = {}
-            output['receive_reports'] = decode_dataset.df
-            output['transmission_reports'] = decode_dataset.get_report(time=15)
+                if (self.radio.set_mode(mode='USB', passband=itset['passband']) != 0):
+                    feedback_handler("Failed to mode to USB")
 
-            output_name = (
-                f"./dataset/output/serialized_samples/{itset['callsign']}_"
-                f"{iteration_datetime_utc.tm_year}_"
-                f"{iteration_datetime_utc.tm_mon}_"
-                f"{iteration_datetime_utc.tm_mday}_"
-                f"{iteration_datetime_utc.tm_hour}_"
-                f"{iteration_datetime_utc.tm_min}_"
-                f"{itset['freq_band']}Hz_"
-                f"{self.curr_freq_offset}Hz_"
-                f"{itset['tx_power']}W_"
-                f"{itset['listening_time']}min.pkl.gz"
-            )
+                print_with_time("Finished listening to the channel, scheduling transmission...")
+                self.radio.transmit_samples(filename="", samples=samples, audio_device=self.config['general_config']['tx_audio_channel'], sample_rate=self.config['general_config']['sample_rate'])
 
-            # Store everything and compress it
-            os.makedirs(os.path.dirname("./dataset/output/serialized_samples/"), exist_ok=True)
-            with gzip.open(output_name, 'wb') as f:
-                pickle.dump(output, f)
+                # Wait for PSK Reporter to update
+                print_with_time(f"Waiting {self.config['general_config']['psk_reporter_delay']} minutes before requesting report to PSKReporter...")
+                start_time = time.time()
+                duration = self.config['general_config']['psk_reporter_delay'] * 60  # duration in seconds
+                while ((time.time() - start_time) < duration):
+                    pass
 
-            print_with_time(f"Finished iteration! Data is stored as {output_name}.")
+                # Assembling data to storage
+                output = {}
+                output['receive_reports'] = decode_dataset.df
+                output['transmission_reports'] = decode_dataset.get_report(self.config['general_config']['appcontact'], time=15)
+                output['swr'] = swr
+
+                output_name = (
+                    f"./dataset/output/serialized_samples/{itset['callsign']}_"
+                    f"{iteration_datetime_utc.tm_year}_"
+                    f"{iteration_datetime_utc.tm_mon}_"
+                    f"{iteration_datetime_utc.tm_mday}_"
+                    f"{iteration_datetime_utc.tm_hour}_"
+                    f"{iteration_datetime_utc.tm_min}_"
+                    f"{itset['freq_band']}Hz_"
+                    f"{self.curr_freq_offset}Hz_"
+                    f"{itset['tx_power']}W_"
+                    f"{itset['listening_time']}min.pkl.gz"
+                )
+
+                # Store everything and compress it
+                os.makedirs(os.path.dirname("./dataset/output/serialized_samples/"), exist_ok=True)
+                with gzip.open(output_name, 'wb') as f:
+                    pickle.dump(output, f)
+
+                print_with_time(f"Finished iteration! Data is stored as {output_name} and swr {swr}.")
+                feedback_handler(f"Finished iteration: {output_name} and swr {swr}.")
 
             # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
             if not((is_last == True) and ((i+1) == itset['n_iterations'])):
