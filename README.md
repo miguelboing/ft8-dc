@@ -17,7 +17,6 @@
 2. Install the required packages `pip install -r requirements.txt`.
 
 ## Usage
-
 1. **Connect your computer to the radio** and check if **rigctld** is successfuly installed.
    For more information, see the [Hamlib rigctl/rigctld documentation](https://www.piwebcat.g3vpx.net/84rigctlrigctld-documentation.html).
 
@@ -86,15 +85,16 @@
      ```
 
 ## Contributing
-Coming soon — contributions are welcome! Please check the issues page for current tasks.
+Contributions are welcome! Please check the ![Issues page](https://github.com/miguelboing/ft8-dc/issues) for ongoing tasks. If you’d like to contribute, you can fork the repository, make your changes, and submit a pull request with your modifications.
 
 ## Road Map
-Version v0.1 is fully functional, but several components can be improved. Currently, the transmitter is implemented entirely in Python, while the receiver still relies on WSJT-X to capture packets. Future development aims to implement the receiving functionality in Python as well, removing the WSJT-X dependency.
+**Version 1.0** introduces a new debug tool and SWR management functionality for the ATU (available exclusively for Flex radios). The `ft8-dc` application has been running reliably for several months, with only minor issues related to the FlexRadio API — these are supposed to be resolved when using firmware version v3.10.10 or later.
+
+**Version 0.1** is fully functional, but several components can be improved. Currently, the transmitter is implemented entirely in Python, while the receiver still relies on WSJT-X to capture packets. Future development aims to implement the receiving functionality in Python as well, removing the WSJT-X dependency.
 
 For additional improvements, known issues, and feature requests, please refer to the issues page.
 
 ## Credits and Licensing
-
 This project includes and modifies code from `ft8.py`, originally written by James Kelly (VK3JPK), licensed under GPLv3.
 
 The FT8 protocol and algorithms are based on WSJT-X by Joe Taylor (K1JT). More information: WSJT-X
