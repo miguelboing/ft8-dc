@@ -7,30 +7,31 @@
 # -----------------------------------------------------------------------------
 # WHAT THIS DOES
 # -----------------------------------------------------------------------------
-# Every wall-clock minute is treated as one "timeframe" (the time slot of the
-# system model). An FT8 minute is divided into four 15 s slots; this experiment
-# uses the first three and leaves the fourth idle:
-#
-#     :00-:15  slot 0  ->  one of {1 W, 10 W, 25 W}
-#     :15-:30  slot 1  ->  one of {1 W, 10 W, 25 W}
-#     :30-:45  slot 2  ->  one of {1 W, 10 W, 25 W}
-#     :45-:60  slot 3  ->  idle
-#
-# Each power level has its OWN callsign so that PSK Reporter spots can be
-# attributed to a power without ambiguity:
+# Transmits a plain CQ at three power levels, each with its OWN callsign so that
+# PSK Reporter spots can be attributed to a power without ambiguity:
 #
 #       1 W  -> M7NSE
 #      10 W  -> M7LSI
 #      25 W  -> MB0LSI
 #
-# The power -> slot assignment is counterbalanced with a 3-minute Latin square:
-# within every block of 3 timeframes each power visits slot 0, slot 1 and slot 2
-# exactly once. Over the whole run each power therefore lands in each slot an
-# equal number of times, so slot/time position is decorrelated from power by
-# construction (no power can benefit from a fixed slot). The base order of each
-# block is randomized. The exact mapping for every transmission is written to a
-# CSV log so it can later be joined against the PSK Reporter dumps
-# (https://pskreporter.info/csv/...).
+# CADENCE (important):
+# An FT8 burst occupies the *entire* 15 s slot (the generated audio buffer is a
+# full 15 s long), and switching RF power over CAT + cycling PTT between bursts
+# takes a second or two. There is therefore no room to transmit in consecutive
+# 15 s slots: in practice each burst lands on every *other* slot, i.e. one burst
+# every 30 s (:00, :30, :00, ...). This script embraces that: it transmits one
+# burst every 30 s and never tries to pack three into a single clock minute.
+#
+# A "timeframe" (the time slot of the system model) is therefore one ROUND of
+# three transmissions, one per power level, spanning 90 s.
+#
+# COUNTERBALANCING:
+# Within every block of 3 timeframes the power -> position assignment follows a
+# randomized 3-minute Latin square: each power occupies position 0, 1 and 2
+# exactly once per block. Over the whole run each power lands in each position an
+# equal number of times, so position/time is decorrelated from power by
+# construction. The ACTUAL UTC slot of every burst is written to the CSV log so
+# it can be joined against the PSK Reporter dumps (https://pskreporter.info/csv/).
 #
 # Only a plain CQ is transmitted, e.g. "CQ M7NSE IO93". No ATU, single band
 # (20 m / 14.074 MHz by default).
@@ -38,11 +39,11 @@
 # -----------------------------------------------------------------------------
 # HOW TO RUN  (rigctld must already be running, exactly like the main program)
 # -----------------------------------------------------------------------------
-#   # real run, 2 hours (120 timeframes):
+#   # real run, ~2 hours:
 #   python extra/power_experiment.py
 #
 #   # rehearse the schedule WITHOUT keying the radio (validates timing + CSV):
-#   python extra/power_experiment.py --dry-run --minutes 5
+#   python extra/power_experiment.py --dry-run --minutes 6
 #
 #   # override duration / grid / band:
 #   python extra/power_experiment.py --minutes 120 --grid IO93 --band 14074000
@@ -75,28 +76,26 @@ from transmission.modulation.modulator import FT8Modulator
 # Experiment configuration -- edit these if needed
 # -----------------------------------------------------------------------------
 
-# Power (Watts) -> dedicated callsign. One transmission per entry, per minute.
+# Power (Watts) -> dedicated callsign. One transmission per entry, per timeframe.
 POWER_CALLSIGNS = [
     (1,  "M7NSE"),
     (10, "M7LSI"),
     (25, "MB0LSI"),
 ]
 
-DEFAULT_MINUTES = 120          # 2 hours = 120 timeframes
+DEFAULT_MINUTES = 120          # approximate wall-clock duration of the run
 DEFAULT_GRID = "IO93"          # Maidenhead locator used in the CQ message
 DEFAULT_BAND_HZ = 14074000     # 20 m FT8 dial frequency
 MAX_POWER_W = 100              # Rig's maximum RF power, used to scale RFPOWER
 
-# Audio offset (Hz) inside the SSB passband. A fresh value is drawn each minute
-# (shared by the three slots, which never overlap in time) to avoid sitting on a
-# fixed sub-channel for the whole run.
+# One burst every 30 s -> a 3-power timeframe lasts 90 s.
+SLOT_PERIOD_S = 30
+TIMEFRAME_S = SLOT_PERIOD_S * len(POWER_CALLSIGNS)
+
+# Audio offset (Hz) inside the SSB passband. A fresh value is drawn each
+# timeframe to avoid sitting on a fixed sub-channel for the whole run.
 AUDIO_OFFSET_MIN = 500
 AUDIO_OFFSET_MAX = 2000
-
-# Number of seconds before a minute boundary at which we arm the first slot.
-# transmit_samples() internally waits for the *next* 15 s boundary, so we just
-# need to be inside the idle slot (:45-:00) when we arm slot 0.
-ARM_LEAD_SECONDS = 3
 
 OUTPUT_DIR = os.path.join(REPO_ROOT, "dataset", "output", "power_experiment")
 
@@ -114,8 +113,20 @@ def sleep_until(target_dt):
         time.sleep(min(delay, 2.0))
 
 
+def next_15s_boundary(now):
+    """Next FT8 slot boundary at or after `now` -- mirrors RadioControl.
+
+    RadioControl.wait_until_next_15s() always advances to the *next* multiple of
+    15 s, so this is the slot a transmit_samples() call started now will key on.
+    """
+    seconds = ((now.second // 15) + 1) * 15
+    if seconds == 60:
+        return now.replace(second=0, microsecond=0) + timedelta(minutes=1)
+    return now.replace(second=seconds, microsecond=0)
+
+
 def build_waveforms(modulator, grid, audio_offset, sample_rate):
-    """Pre-generate the FT8 audio for each callsign for the upcoming minute."""
+    """Pre-generate the FT8 audio for each callsign for the upcoming timeframe."""
     waveforms = {}
     for _power, callsign in POWER_CALLSIGNS:
         signal = modulator.create_signal("CQ", callsign, grid, audio_offset, 0.0)
@@ -128,7 +139,7 @@ def build_waveforms(modulator, grid, audio_offset, sample_rate):
 def main():
     parser = argparse.ArgumentParser(description="Sequential multi-power FT8 experiment")
     parser.add_argument("--minutes", type=int, default=DEFAULT_MINUTES,
-                        help="Number of 1-minute timeframes to run (default: 120 = 2h)")
+                        help="Approximate wall-clock duration in minutes (default: 120)")
     parser.add_argument("--grid", default=DEFAULT_GRID,
                         help="Maidenhead locator for the CQ message (default: IO93)")
     parser.add_argument("--band", type=int, default=DEFAULT_BAND_HZ,
@@ -136,6 +147,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="Rehearse the schedule and CSV without keying the radio")
     args = parser.parse_args()
+
+    # Each timeframe is 3 bursts x 30 s = 90 s; derive how many fit the duration.
+    n_timeframes = max(1, (args.minutes * 60) // TIMEFRAME_S)
 
     # Infrastructure parameters come from the shared config.toml.
     with open(os.path.join(REPO_ROOT, "config.toml"), "r") as f:
@@ -152,7 +166,8 @@ def main():
     )
 
     log("=== FT8 sequential multi-power experiment ===")
-    log(f"Timeframes : {args.minutes} minute(s)")
+    log(f"Timeframes : {n_timeframes}  (~{n_timeframes * TIMEFRAME_S / 60:.0f} min, "
+        f"{n_timeframes * len(POWER_CALLSIGNS)} bursts @ {SLOT_PERIOD_S}s spacing)")
     log(f"Band       : {args.band} Hz   Grid: {args.grid}")
     log(f"Powers     : " + ", ".join(f"{p}W={c}" for p, c in POWER_CALLSIGNS))
     log(f"Audio dev  : {tx_audio_channel}   Sample rate: {sample_rate} Hz")
@@ -174,59 +189,45 @@ def main():
     csv_file = open(csv_path, "w", newline="")
     writer = csv.writer(csv_file)
     writer.writerow([
-        "timeframe", "block", "minute_start_utc", "slot", "slot_start_utc",
+        "timeframe", "block", "slot", "tx_slot_utc",
         "power_w", "callsign", "message", "band_hz", "audio_offset_hz",
         "tx_power_set_ok",
     ])
     csv_file.flush()
 
-    # Anchor every timeframe to the top of the next full minute.
-    now = datetime.now(UTC)
-    first_minute = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
-    log(f"Aligning to first timeframe at {first_minute.strftime('%H:%M:%S')}Z ...")
-
-    base_order = None  # base power order for the current 3-minute Latin-square block
+    base_order = None  # base power order for the current Latin-square block
 
     try:
-        for tf in range(args.minutes):
-            minute_start = first_minute + timedelta(minutes=tf)
-
-            # Prepare this minute's waveforms and slot order during the idle
-            # window of the previous minute (or the initial alignment wait).
-            audio_offset = random.randint(AUDIO_OFFSET_MIN, AUDIO_OFFSET_MAX)
-            waveforms = None
-            if not args.dry_run:
-                waveforms = build_waveforms(modulator, args.grid, audio_offset, sample_rate)
-                # Re-assert band/mode each minute in case the rig drifted.
-                radio.set_mode(mode="USB", passband=-1)
-                radio.set_if_frequency(args.band)
-
+        for tf in range(n_timeframes):
             # Counterbalanced rotation: a fresh random base order at the start of
-            # each 3-minute block, then a cyclic shift per minute so each power
-            # visits each slot exactly once across the block.
+            # each block of 3 timeframes, then a cyclic shift per timeframe so
+            # each power visits each position exactly once across the block.
             block, row = divmod(tf, len(POWER_CALLSIGNS))
             if row == 0:
                 base_order = POWER_CALLSIGNS[:]
                 random.shuffle(base_order)
             order = base_order[row:] + base_order[:row]
 
-            log(f"--- Timeframe {tf + 1}/{args.minutes} (block {block}, row {row}) "
-                f"@ {minute_start.strftime('%H:%M')}Z "
+            audio_offset = random.randint(AUDIO_OFFSET_MIN, AUDIO_OFFSET_MAX)
+            waveforms = None
+            if not args.dry_run:
+                waveforms = build_waveforms(modulator, args.grid, audio_offset, sample_rate)
+
+            log(f"--- Timeframe {tf + 1}/{n_timeframes} (block {block}, row {row}) "
                 f"offset={audio_offset}Hz order={[p for p, _ in order]}W ---")
 
-            # Arm slot 0: be inside the idle slot so the internal 15 s alignment
-            # in transmit_samples() lands us exactly on the minute boundary.
-            sleep_until(minute_start - timedelta(seconds=ARM_LEAD_SECONDS))
-
             for slot, (power, callsign) in enumerate(order):
-                slot_start = minute_start + timedelta(seconds=slot * 15)
                 message = f"CQ {callsign} {args.grid}"
                 tx_power_ok = True
 
                 if args.dry_run:
-                    # Just respect the slot boundary and record the plan.
-                    sleep_until(slot_start)
-                    log(f"  [dry] slot {slot} {power:>2}W {callsign:<7} \"{message}\"")
+                    # Mimic the real cadence: wait for the slot, then occupy a
+                    # full 15 s burst so the next one lands ~30 s later.
+                    tx_slot = next_15s_boundary(datetime.now(UTC))
+                    sleep_until(tx_slot)
+                    log(f"  [dry] slot {slot} {power:>2}W {callsign:<7} "
+                        f"\"{message}\" @ {tx_slot.strftime('%H:%M:%S')}Z")
+                    sleep_until(tx_slot + timedelta(seconds=15))
                 else:
                     try:
                         if radio.set_tx_power(power) != 0:
@@ -236,9 +237,11 @@ def main():
                         tx_power_ok = False
                         log(f"  WARNING: set_tx_power({power}) raised: {e}")
 
-                    log(f"  slot {slot} {power:>2}W {callsign:<7} \"{message}\" -> TX")
-                    # Internally waits for the next 15 s boundary, keys PTT,
-                    # plays the ~12.6 s FT8 burst, then returns to RX.
+                    # transmit_samples() internally waits for the next 15 s
+                    # boundary; record exactly which slot that will be.
+                    tx_slot = next_15s_boundary(datetime.now(UTC))
+                    log(f"  slot {slot} {power:>2}W {callsign:<7} \"{message}\" "
+                        f"-> TX @ {tx_slot.strftime('%H:%M:%S')}Z")
                     radio.transmit_samples(
                         filename="",
                         samples=waveforms[callsign],
@@ -247,14 +250,11 @@ def main():
                     )
 
                 writer.writerow([
-                    tf, block, minute_start.strftime("%Y-%m-%d %H:%M:%S"), slot,
-                    slot_start.strftime("%Y-%m-%d %H:%M:%S"), power, callsign,
+                    tf, block, slot,
+                    tx_slot.strftime("%Y-%m-%d %H:%M:%S"), power, callsign,
                     message, args.band, audio_offset, tx_power_ok,
                 ])
                 csv_file.flush()
-
-            # Slot 3 stays idle; the next iteration sleeps past :45 to :00,
-            # which both skips the idle slot and re-aligns slot 0.
 
         log("Experiment finished. All timeframes transmitted.")
 
