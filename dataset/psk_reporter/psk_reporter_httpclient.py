@@ -1,13 +1,60 @@
+import time as _time
 import requests
 import pandas as pd
+import pickle
+import gzip
+
 from io import StringIO
 import dataset.psk_reporter.listenerstationclusters as lsc
+from extra.feedback import feedback_handler
 
 class PSKReporter():
     url = "https://retrieve.pskreporter.info/query"
 
+    # Retry policy for transient server-side failures (e.g. Cloudflare 502/503).
+    MAX_RETRIES = 5
+    BACKOFF_BASE_S = 5
+
     def __init__(self, callsign):
         self.senderCallsign = callsign
+
+    def _fetch_xml(self, params):
+        """Query PSK Reporter and return the XML body as a string.
+
+        Retries transient failures (network errors and 5xx responses, which
+        PSK Reporter serves as a Cloudflare HTML error page rather than XML)
+        with exponential backoff. Returns None if no XML could be obtained.
+        """
+        for attempt in range(1, self.MAX_RETRIES + 1):
+            try:
+                r = requests.get(self.url, params=params, timeout=30)
+            except requests.RequestException as e:
+                print(f"PSK Reporter request failed (attempt {attempt}/{self.MAX_RETRIES}): {e}")
+            else:
+                ctype = r.headers.get("Content-Type", "")
+                body = r.text.lstrip()
+                is_html = body[:5].lower() == "<!doc" or body[:5].lower() == "<html" \
+                    or "html" in ctype.lower()
+
+                if r.status_code == 200 and not is_html:
+                    return r.text
+                # 5xx / HTML error page => transient; anything else, log and retry too.
+                print(f"PSK Reporter returned a non-XML response "
+                      f"(status {r.status_code}, content-type '{ctype}') "
+                      f"on attempt {attempt}/{self.MAX_RETRIES}.")
+
+            if attempt < self.MAX_RETRIES:
+                delay = self.BACKOFF_BASE_S * (2 ** (attempt - 1))
+                print(f"Retrying in {delay}s...")
+                _time.sleep(delay)
+
+        print("PSK Reporter unreachable after retries; skipping this query.")
+        feedback_handler(
+            f"PSK Reporter fetch FAILED for {self.senderCallsign} after "
+            f"{self.MAX_RETRIES} attempts (server unreachable / non-XML response). "
+            f"Skipping this query."
+        )
+        return None
 
     def get_report(self, appcontact, time=30):
 
@@ -19,12 +66,14 @@ class PSKReporter():
 
         # Sending a request to PSK Reporter.
         try:
-            r = requests.get(self.url, params=params)
+            xml_text = self._fetch_xml(params)
+            if xml_text is None:
+                return -1
 
             report = {}
 
             # If the XML is HTML-escaped (e.g., &lt; and &gt;), decode it first
-            xml_string = r.text.replace("&lt;", "<").replace("&gt;", ">")
+            xml_string = xml_text.replace("&lt;", "<").replace("&gt;", ">")
 
             # Reports that contains the given callsign.
             try:
@@ -35,11 +84,17 @@ class PSKReporter():
                 df_reception_report = pd.DataFrame()
 
             except Exception as e:
+                # Reaching here means a 200 response that still wasn't parseable
+                # XML. Save it for inspection but keep the experiment running.
                 print(f"Caught error {e}!")
-                with gzip.open('error_xml.pkl.gz', 'wb') as f:
-                   pickle.dump(r.text, f)
-                feedback_handler(f"Received an XML error.")
-                exit()
+                with open('error_xml.html', 'w') as f:
+                    f.write(xml_text)
+                feedback_handler(
+                    f"PSK Reporter returned a 200 response for {self.senderCallsign} "
+                    f"that could not be parsed as XML ({e}). Saved to error_xml.html, "
+                    f"skipping this query."
+                )
+                return -1
 
             report['reception_reports'] = df_reception_report
 
