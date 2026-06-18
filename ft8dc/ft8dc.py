@@ -152,32 +152,40 @@ class FT8DC():
                 while ((time.time() - start_time) < duration):
                     pass
 
-                # Assembling data to storage
-                output = {}
-                output['receive_reports'] = decode_dataset.df
-                output['transmission_reports'] = decode_dataset.get_report(self.config['general_config']['appcontact'], time=15)
-                output['swr'] = swr
+                # Fetch the reception reports first. If this fails there is no
+                # point in storing the iteration, so skip saving entirely.
+                transmission_reports = decode_dataset.get_report(self.config['general_config']['appcontact'], time=15)
 
-                output_name = (
-                    f"./dataset/output/serialized_samples/{itset['callsign']}_"
-                    f"{iteration_datetime_utc.tm_year}_"
-                    f"{iteration_datetime_utc.tm_mon}_"
-                    f"{iteration_datetime_utc.tm_mday}_"
-                    f"{iteration_datetime_utc.tm_hour}_"
-                    f"{iteration_datetime_utc.tm_min}_"
-                    f"{itset['freq_band']}Hz_"
-                    f"{self.curr_freq_offset}Hz_"
-                    f"{itset['tx_power']}W_"
-                    f"{itset['listening_time']}min.pkl.gz"
-                )
+                if (transmission_reports == -1):
+                    print_with_time("Failed to fetch reception reports, skipping this iteration (nothing saved).")
+                    feedback_handler("Failed to fetch reception reports, skipping this iteration.")
+                else:
+                    # Assembling data to storage
+                    output = {}
+                    output['receive_reports'] = decode_dataset.df
+                    output['transmission_reports'] = transmission_reports
+                    output['swr'] = swr
 
-                # Store everything and compress it
-                os.makedirs(os.path.dirname("./dataset/output/serialized_samples/"), exist_ok=True)
-                with gzip.open(output_name, 'wb') as f:
-                    pickle.dump(output, f)
+                    output_name = (
+                        f"./dataset/output/serialized_samples/{itset['callsign']}_"
+                        f"{iteration_datetime_utc.tm_year}_"
+                        f"{iteration_datetime_utc.tm_mon}_"
+                        f"{iteration_datetime_utc.tm_mday}_"
+                        f"{iteration_datetime_utc.tm_hour}_"
+                        f"{iteration_datetime_utc.tm_min}_"
+                        f"{itset['freq_band']}Hz_"
+                        f"{self.curr_freq_offset}Hz_"
+                        f"{itset['tx_power']}W_"
+                        f"{itset['listening_time']}min.pkl.gz"
+                    )
 
-                print_with_time(f"Finished iteration! Data is stored as {output_name} and swr {swr}.")
-                feedback_handler(f"Finished iteration: {output_name} and swr {swr}.")
+                    # Store everything and compress it
+                    os.makedirs(os.path.dirname("./dataset/output/serialized_samples/"), exist_ok=True)
+                    with gzip.open(output_name, 'wb') as f:
+                        pickle.dump(output, f)
+
+                    print_with_time(f"Finished iteration! Data is stored as {output_name} and swr {swr}.")
+                    feedback_handler(f"Finished iteration: {output_name} and swr {swr}.")
 
             # Waiting time between iterations, skip this if it is the last iteraction of the last iteraction_set
             if not((is_last == True) and ((i+1) == itset['n_iterations'])):
