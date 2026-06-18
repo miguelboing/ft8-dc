@@ -137,6 +137,23 @@ def count_reports(dump_paths, bursts):
     return counts, stats
 
 
+def rolling_mean(y, window):
+    """Centred moving average over `y`, shrinking the window at the edges.
+
+    Edge points average only the timeframes that exist, so the smoothed curve
+    spans the full x-range without NaN gaps or end artefacts.
+    """
+    n = len(y)
+    half = window // 2
+    out = []
+    for i in range(n):
+        lo = max(0, i - half)
+        hi = min(n, i + half + 1)
+        seg = y[lo:hi]
+        out.append(sum(seg) / len(seg))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Plot reception reports per timeframe per power level")
@@ -148,6 +165,9 @@ def main():
                     help="output image path")
     ap.add_argument("--csv-out", default=None,
                     help="optional CSV of the per-timeframe counts")
+    ap.add_argument("--smooth", type=int, default=9,
+                    help="centred rolling-average window in timeframes; "
+                         "0 disables the overlay (default: 9)")
     ap.add_argument("--no-show", action="store_true", help="don't open a window")
     args = ap.parse_args()
 
@@ -193,12 +213,25 @@ def main():
     if args.no_show:
         matplotlib.use("Agg")
 
+    win = args.smooth if args.smooth and args.smooth > 1 else 0
+
     fig, ax = plt.subplots(figsize=(12, 5))
     for power, callsign in POWER_CALLSIGNS:
         y = [counts.get((tf, callsign), 0) for tf in tfs]
         total = sum(y)
-        ax.plot(tfs, y, marker=".", markersize=4, linewidth=1,
-                label=f"{power} W  ({callsign}, n={total})")
+        # Raw per-timeframe counts. Faded when a smoothed overlay is drawn on
+        # top, full strength when it is the only curve.
+        line, = ax.plot(tfs, y, marker=".", markersize=4, linewidth=1,
+                        alpha=0.25 if win else 1.0,
+                        label=None if win else f"{power} W  (n={total})")
+        if win:
+            ys = rolling_mean(y, win)
+            ax.plot(tfs, ys, linewidth=2.2, color=line.get_color(),
+                    label=f"{power} W  (n={total})")
+    if win:
+        ax.text(0.99, 0.97, f"lines: {win}-timeframe rolling mean",
+                transform=ax.transAxes, ha="right", va="top", fontsize=8,
+                color="0.4")
 
     ax.set_xlabel("Timeframe")
     ax.set_ylabel("Number of reception reports")
